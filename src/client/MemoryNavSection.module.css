@@ -1,0 +1,105 @@
+/* Memory monitoring nav group: sits between the New Session button and the
+   workspace browser. Dimensions mirror the sidebar's own rows (36px height,
+   8px item radius, 12px header radius); colors ride the shared alias tokens
+   so light/dark themes follow the product. */
+
+.group {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin-top: 2px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+}
+
+.header:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.headerLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex: none;
+  transition: transform 150ms var(--ds-ease-in-out);
+}
+
+.chevronCollapsed {
+  transform: rotate(-90deg);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0 6px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  /* Indented under the header label (8px pad + 14px chevron + 4px gap). */
+  padding: 0 8px 0 26px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.item:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.itemActive {
+  background: var(--dsw-alias-interactive-bg-active);
+  color: var(--dsw-alias-label-primary);
+  font-weight: 500;
+}
+
+.itemActive:hover {
+  background: var(--dsw-alias-interactive-bg-active);
+}
+
+/* Rail variant: one icon, centered in the 56px column. */
+.rail {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 2px auto 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.rail:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}

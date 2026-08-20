@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build bookkeeping (the built lib/ itself IS committed on purpose: this
+# package ships its build output so installs never need the monorepo
+# toolchain — see docs/BUILDING.md).
+*.tsbuildinfo
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,899 @@
+/**
+ * Memory system wire vocabulary: experience lifecycle, recall adjudication,
+ * use reports with attribution, the diary/fact semantic layer, and the
+ * append-only ledger. Types only — no runtime code.
+ * @module daoing-dsh-memory/types
+ */
+
+// ── experience lifecycle ────────────────────────────────────────────────────
+
+/** Lifecycle status of one experience revision (005 §3 state machine + 006 §3 cold palace). */
+export type ExperienceStatus = 'candidate' | 'live' | 'challenged' | 'superseded' | 'archived' | 'cold'
+
+/** Positive = a path that works; negative = a confirmed dead end + reason. */
+export type ExperienceKind = 'positive' | 'negative'
+
+/** Where the experience came from: agent refinement or human injection. */
+export type ExperienceSource = 'agent' | 'human'
+
+/** One ordered step of an experience path. */
+export interface ExperienceStep {
+  /** 1-based position in the path. */
+  order: number
+  /** What to do at this step. */
+  action: string
+}
+
+/** Episodic evidence pointer anchoring an experience to its source trace. */
+export interface EvidenceRef {
+  /** Pointer to the original execution trace (id, path, or URI). */
+  traceRef?: string
+  /** Pointer to the originating session. */
+  sessionRef?: string
+  /** Free-text note describing the evidence. */
+  note?: string
+}
+
+/** One experience revision as it crosses the wire. */
+export interface ExperienceSnapshot {
+  /** Family id: stable across revisions of one experience line. */
+  id: string
+  /** Revision number within the family (1-based). */
+  revision: number
+  /** Positive path or confirmed dead end. */
+  kind: ExperienceKind
+  /** Who created it: agent refinement or human injection. */
+  source: ExperienceSource
+  /** Task-family tag used by the per-family capacity budget. */
+  family: string
+  /** One-sentence experience. */
+  gist: string
+  /** Situations where this experience applies. */
+  situation: string[]
+  /** The actual path that worked (or the dead end that failed). */
+  path: ExperienceStep[]
+  /** Judgment background: why this path, what was weighed. */
+  reasoning: string
+  /** Boundaries where this experience does NOT apply. */
+  limits: string[]
+  /** Lifecycle status of this revision. */
+  status: ExperienceStatus
+  /** Beta posterior success count. */
+  alpha: number
+  /** Beta posterior failure count. */
+  beta: number
+  /** Total counted verification samples (alpha + beta). */
+  samples: number
+  /** Beta posterior mean (alpha+1)/(alpha+beta+2). */
+  trust: number
+  /** Recency-weighted trust (samples decay with age). */
+  weightedTrust: number
+  /** Epoch ms of the last verification sample, absent when never verified. */
+  lastVerifiedAt?: number
+  /** Human-pinned: never budget-archived, trust floored. */
+  pinned: boolean
+  /** Economic value: tokens saved by following this experience. */
+  tokensSaved: number
+  /** Economic value: tokens spent refining/verifying it. */
+  tokensSpent: number
+  /** For revised drafts: the parent revision this one supersedes. */
+  parentRevision?: number
+  /** Negative experiences carry the confirmed failure reason. */
+  failureReason?: string
+  /** Episodic evidence pointer (mandatory for agent-refined candidates). */
+  evidence?: EvidenceRef
+  /** Why this revision is quarantined (challenged only). */
+  challengeReason?: string
+  /** Context/domain scope for anti-pollution recall (006 §2); '' = unscoped. */
+  context: string
+  /** Counted successful verifications/uses — human decision aid (006 §3.3). */
+  verifiedCount: number
+  /** Counted cold-palace rejections from failed trials (006 §3.3). */
+  rejectCount: number
+  /** Cross-context transferable (global) flag; default local-only (006 §2.4). */
+  globalFlag: boolean
+  /** Epoch ms. */
+  createdAt: number
+  /** Epoch ms. */
+  updatedAt: number
+}
+
+// ── 生: refine ──────────────────────────────────────────────────────────────
+
+/** Complexity signals of the source trajectory (the complexity gate input). */
+export interface ComplexitySignal {
+  /** Token cost of the trajectory. */
+  tokens?: number
+  /** Step count of the trajectory. */
+  steps?: number
+  /** Whether the trajectory contained failures. */
+  hadFailure?: boolean
+}
+
+/** 生: refine one completed trajectory into an experience candidate. */
+export interface RefineExperienceRequest {
+  /** Positive path or confirmed dead end. */
+  kind: ExperienceKind
+  /** Task-family tag (capacity budget + consolidation key). */
+  family: string
+  /** One-sentence experience. */
+  gist: string
+  /** Situations where it applies. */
+  situation: string[]
+  /** The path itself. */
+  path: ExperienceStep[]
+  /** Judgment background. */
+  reasoning: string
+  /** Non-applicable boundaries. */
+  limits: string[]
+  /** Required for negative experiences: the confirmed failure reason. */
+  failureReason?: string
+  /** Episodic evidence pointer — assertions without one are rejected. */
+  evidence: EvidenceRef
+  /** Complexity gate input. */
+  complexity: ComplexitySignal
+  /** Human-marked trajectories bypass the complexity gate. */
+  humanMarked?: boolean
+  /** Context/domain scope the experience belongs to (006 §2). */
+  context?: string
+}
+
+/** Refine outcome: accepted candidate, or the gate that rejected it. */
+export interface RefineExperienceResult {
+  /** Whether a new candidate was stored. */
+  accepted: boolean
+  /** When rejected: which gate rejected it and why. */
+  reason?: string
+  /** The stored candidate (accepted only). */
+  experience?: ExperienceSnapshot
+  /** Information-gain gate: the existing experience this trajectory corroborates. */
+  corroboratedId?: string
+}
+
+// ── 用: recall + adjudication ───────────────────────────────────────────────
+
+/** 用: recall experiences for a new situation. */
+export interface RecallExperiencesRequest {
+  /** The new task situation, freely described. */
+  situation: string
+  /** Max candidates before adjudication (default from config). */
+  topK?: number
+  /** Injection budget override in estimated tokens. */
+  budgetTokens?: number
+  /** Also search archived experiences (deep lookup). */
+  deep?: boolean
+  /** Active context/domain for scope filtering (006 §2); omit = no scope filter. */
+  context?: string
+  /** Include the candidate probe channel (default true, 006 §3.1). */
+  includeTrials?: boolean
+}
+
+/** Adjudication verdict for one recalled experience. */
+export type RecallVerdict = 'direct' | 'reference' | 'clue'
+
+/** One recalled experience after adjudication. */
+export interface RecalledExperience {
+  /** The experience revision. */
+  experience: ExperienceSnapshot
+  /** Retrieval relevance score (0..1). */
+  score: number
+  /** Adjudication verdict: direct adopt / adapt as reference / hint only. */
+  verdict: RecallVerdict
+  /** Limits entries that may conflict with the queried situation. */
+  conflicts: string[]
+}
+
+/** One matched candidate offered for a one-shot trial (006 §3.1); untrusted by design. */
+export interface CandidateTrial {
+  /** The candidate experience revision (status = candidate). */
+  experience: ExperienceSnapshot
+  /** Retrieval relevance score (0..1). */
+  score: number
+}
+
+/** Recall outcome, including the explicit negative channel. */
+export interface RecallExperiencesResult {
+  /** Injected experiences, best expected value first, within budget. */
+  items: RecalledExperience[]
+  /** Negative channel: true when no relevant experience exists. */
+  none: boolean
+  /** Why the channel is negative (none only). */
+  reason?: string
+  /** Candidates trimmed by the injection budget. */
+  omitted: number
+  /** Estimated token cost of the injected set. */
+  estimatedTokens: number
+  /** Candidate probe channel: unverified matches offered for a trial (006 §3.1). */
+  candidateTrials: CandidateTrial[]
+  /** Consolidation cadence nudge: true when a merge pass is due (008 §1). */
+  consolidationDue: boolean
+}
+
+// ── 用·验: report with attribution ──────────────────────────────────────────
+
+/** Report outcome: did following the experience work? */
+export type ReportOutcome = 'success' | 'fail'
+
+/** Four-way failure attribution (005 §5.2). */
+export type FailureAttribution = 'experience' | 'environment' | 'unrelated' | 'unknown'
+
+/** 用·验: report one use outcome; use is verification (V0). */
+export interface ReportUseRequest {
+  /** Experience family id. */
+  id: string
+  /** Target revision: omit for the active one; pass a draft revision to verify it. */
+  revision?: number
+  /** Success or failure of following the experience. */
+  outcome: ReportOutcome
+  /** Claimed attribution for failures. */
+  attribution?: FailureAttribution
+  /** Objective evidence preferred over the claim; failure attribution needs a note. */
+  evidence?: EvidenceRef
+  /** Tokens this execution spent (economic accounting). */
+  tokensUsed?: number
+  /** Tokens this execution saved versus re-exploring (economic accounting). */
+  tokensSaved?: number
+  /** Idempotency key: a repeated report with the same key is not counted twice. */
+  dedupeKey?: string
+}
+
+/** Report outcome: what the ledger counted and what moved. */
+export interface ReportUseResult {
+  /** The updated revision snapshot. */
+  snapshot: ExperienceSnapshot
+  /** What the Beta posterior counted. */
+  counted: 'alpha' | 'beta' | 'none'
+  /** Attribution actually applied (objective evidence may override the claim). */
+  attributionApplied: FailureAttribution
+  /** Set when the evidence overrode the claimed attribution. */
+  overrideNote?: string
+  /** True when this report quarantined the experience. */
+  challenged: boolean
+  /** True when this report promoted a candidate to live (verification passed). */
+  promoted: boolean
+  /** True when this report adopted a revised draft (revision gate passed). */
+  adopted: boolean
+  /** True when a candidate trial failed and the revision went to the cold palace (006 §3.2). */
+  cooled?: boolean
+}
+
+// ── 摄取归一: ingest (006 §1, source-agnostic extraction intake) ──────────────
+
+/** The kind of source an ingest batch comes from (drives the confidence prior). */
+export type IngestSourceType = 'conversation' | 'document' | 'skill' | 'book' | 'note' | 'other'
+
+/** One experience draft extracted from an ingested source. */
+export interface IngestExperienceItem {
+  /** Positive path or confirmed dead end. */
+  kind: ExperienceKind
+  /** Task-family tag. */
+  family: string
+  /** One-sentence experience. */
+  gist: string
+  /** Situations where it applies. */
+  situation: string[]
+  /** The path itself. */
+  path: ExperienceStep[]
+  /** Judgment background. */
+  reasoning: string
+  /** Non-applicable boundaries. */
+  limits: string[]
+  /** Required for negative items: the confirmed failure reason. */
+  failureReason?: string
+}
+
+/** 摄取归一: submit a batch of extracted candidates with provenance (006 §1). */
+export interface IngestRequest {
+  /** What kind of source was read. */
+  sourceType: IngestSourceType
+  /** Provenance pointer: which book / skill / session / document (audited). */
+  sourceRef: string
+  /** Context/domain scope assigned to the produced candidates (006 §2). */
+  context?: string
+  /** Extracted experience drafts (each becomes a candidate). */
+  experiences: IngestExperienceItem[]
+  /** Optional note about the ingest run (audited). */
+  note?: string
+}
+
+/** Ingest outcome: which drafts were stored vs rejected by the gates. */
+export interface IngestResult {
+  /** Stored candidates (earned: not recallable until verified). */
+  accepted: ExperienceSnapshot[]
+  /** Drafts rejected by the evidence/duplicate gates. */
+  rejected: { gist: string; reason: string }[]
+  /** The source-authority prior applied to every accepted candidate. */
+  sourcePrior: { alpha: number; beta: number }
+}
+
+// ── 修: revise / adopt / rollback / verify ──────────────────────────────────
+
+/** 修: propose a revised draft for a challenged experience. */
+export interface ReviseExperienceRequest {
+  /** Experience family id (must be challenged). */
+  id: string
+  /** Diagnosis: root cause and what the revision changes. */
+  reason: string
+  /** Replacement gist (kept when omitted). */
+  gist?: string
+  /** Replacement situations (kept when omitted). */
+  situation?: string[]
+  /** Replacement path (kept when omitted). */
+  path?: ExperienceStep[]
+  /** Replacement reasoning (kept when omitted). */
+  reasoning?: string
+  /** Replacement limits (kept when omitted). */
+  limits?: string[]
+}
+
+/** V1 controlled re-enactment: replay historical samples against a draft. */
+export interface VerifyShadowRequest {
+  /** Experience family id. */
+  id: string
+  /** The draft revision to verify. */
+  revision: number
+  /** Historical situations with their known outcomes. */
+  samples: { situation: string; expected: ReportOutcome }[]
+}
+
+/** Shadow replay outcome. */
+export interface VerifyShadowResult {
+  /** Whether the draft passed the replay gate. */
+  passed: boolean
+  /** Fraction of samples the draft's adjudication matched. */
+  agreement: number
+  /** Adopted to live (passed only). */
+  snapshot?: ExperienceSnapshot
+  /** Why it failed (failed only). */
+  reason?: string
+}
+
+/** Roll one experience family back to a superseded revision. */
+export interface RollbackExperienceRequest {
+  /** Experience family id. */
+  id: string
+  /** The superseded revision to restore to live. */
+  toRevision: number
+  /** Audited reason (written to the ledger). */
+  reason: string
+}
+
+// ── 记: diary + facts (semantic memory) ─────────────────────────────────────
+
+/** Diary entry kind: what happened in the interaction. */
+export type DiaryKind = 'said' | 'delegated' | 'promised' | 'happened' | 'preference' | 'other'
+
+/** Fact category: the profile facet a fact belongs to (007 §1, expanded with
+ * thinking/value/goal/communication/background so vision & philosophies have a
+ * proper home; legacy values remain valid). */
+/**
+ * Profile facet — the AI's perception of the USER (who they are / how to
+ * collaborate), NOT project content. Project goals/decisions/context belong in
+ * concerns (open-loop memo), never here. `background` absorbs environment,
+ * resources and accounts the user owns.
+ */
+export type FactCategory =
+  | 'identity' | 'preference' | 'communication' | 'habit'
+  | 'thinking' | 'value' | 'delegation' | 'background' | 'other'
+
+/** 记: append one diary entry (event layer, append-only, never auto-deleted). */
+export interface DiaryAppendRequest {
+  /** What kind of interaction this records. */
+  kind: DiaryKind
+  /** The diary content. */
+  content: string
+  /** Pointer to the session this happened in. */
+  sessionRef?: string
+  /** Free tags for retrieval. */
+  tags?: string[]
+}
+
+/** One diary entry as it crosses the wire. */
+export interface DiaryEntry {
+  /** Entry id. */
+  id: string
+  /** Epoch ms. */
+  ts: number
+  /** Interaction kind. */
+  kind: DiaryKind
+  /** The diary content. */
+  content: string
+  /** Session pointer. */
+  sessionRef?: string
+  /** Free tags. */
+  tags: string[]
+  /** Whether a completed extraction already consumed this entry. */
+  extracted: boolean
+}
+
+/** Diary append outcome, including the extraction duty signal. */
+export interface DiaryAppendResult {
+  /** The stored entry. */
+  entry: DiaryEntry
+  /** True when the extraction cadence is due: the agent must propose facts. */
+  extractionDue: boolean
+  /** Unextracted entries awaiting the next extraction (extractionDue only). */
+  pendingDiary?: DiaryEntry[]
+}
+
+/** One proposed fact produced by reading the diary window. */
+export interface FactProposal {
+  /** Profile slot. */
+  category: FactCategory
+  /** Stable slot key inside the category (e.g. "timezone"). */
+  factKey: string
+  /** The fact value. */
+  value: string
+  /** Diary entries this fact was extracted from (source pointers). */
+  sourceDiaryIds: string[]
+  /** Optional extraction note. */
+  note?: string
+}
+
+/** 上升通道: submit extracted facts for the pending diary window. */
+export interface ExtractFactsRequest {
+  /** Proposed stable facts. */
+  proposals: FactProposal[]
+  /** Proposed concern updates (007 §2.3): new / mention / status. */
+  concerns?: ConcernProposal[]
+  /** One-line summary of the extraction window. */
+  summary: string
+}
+
+/** One fact version (bi-temporal: valid time x recorded time). */
+export interface FactEntry {
+  /** Fact version id. */
+  id: string
+  /** Profile slot. */
+  category: FactCategory
+  /** Stable slot key inside the category. */
+  factKey: string
+  /** The fact value. */
+  value: string
+  /** How this version originated. */
+  origin: 'extraction' | 'human' | 'supersede'
+  /** Diary entries it was extracted from (empty for human-added). */
+  sourceDiaryIds: string[]
+  /** How many independent observations corroborate it. */
+  corroboration: number
+  /** Valid-time start (epoch ms). */
+  validFrom: number
+  /** Valid-time end; absent while current. */
+  validTo?: number
+  /** Recorded time (epoch ms). */
+  recordedAt: number
+  /** The version that superseded this one. */
+  supersededBy?: string
+  /** Human-confirmed: never auto-superseded. */
+  locked: boolean
+  /** Human-deleted (tombstone kept for audit). */
+  deleted: boolean
+  /** Conflicts with a locked fact, awaiting human ruling. */
+  conflictPending: boolean
+}
+
+/** Extraction outcome. */
+export interface ExtractFactsResult {
+  /** Current versions created or corroborated. */
+  applied: FactEntry[]
+  /** Proposals parked as conflict-pending against a locked fact. */
+  conflicts: FactEntry[]
+  /** Proposals rejected (bad source pointers, duplicates). */
+  rejected: { proposal: FactProposal; reason: string }[]
+  /** Concern nodes created/extended by this extraction (007 §2). */
+  appliedConcerns: number
+}
+
+// ── 关心事项（007 §2, evolving concerns with parent/child hierarchy) ────────
+
+/** Concern shape (open by design; the enum only guides the model). */
+/**
+ * Concern = an OPEN LOOP / memo for the user: something they raised that is not
+ * yet closed — a to-do, an idea, an unanswered question, a pending decision, a
+ * commitment. NOT a topic/project label.
+ */
+export type ConcernKind = 'todo' | 'thinking' | 'idea' | 'question' | 'decision' | 'commitment' | 'other'
+
+/** Concern lifecycle (top-level only). */
+export type ConcernStatus = 'ongoing' | 'concluded' | 'recurring' | 'paused'
+
+/** One concerns-table row: top-level (parentId absent) or a discussion mention. */
+export interface ConcernEntry {
+  /** Row id. */
+  id: string
+  /** Absent for a top-level concern; the concern id for a discussion mention. */
+  parentId?: string
+  /** Top-level: the category/concern name; child: one-line discussion summary. */
+  title: string
+  /**
+   * Top-level only: the BACKGROUND scene — enough context that reading this
+   * memo alone lets the user recall when/why it came up. Empty for mentions.
+   */
+  background?: string
+  /** Top-level shape (007 §2.1, not limiting). */
+  kind?: ConcernKind
+  /** Top-level lifecycle. */
+  status?: ConcernStatus
+  /** Child: discussion time; top-level: first-mention time. */
+  ts: number
+  /** Diary entries this node was distilled from. */
+  sourceDiaryIds: string[]
+  /** Context scope (006 §2). */
+  context?: string
+  /** Human-deleted tombstone. */
+  deleted: boolean
+}
+
+/** A top-level concern plus its discussion loop (the UI hierarchy unit). */
+export interface ConcernTree {
+  concern: ConcernEntry
+  mentions: ConcernEntry[]
+}
+
+/** Extraction proposal touching the concerns layer (007 §2.3). */
+export interface ConcernProposal {
+  /** new = new top-level concern; mention = discussion under an existing one; status = lifecycle change. */
+  action: 'new' | 'mention' | 'status'
+  /** new: concern title; mention: one-line discussion summary. */
+  title?: string
+  /** new: the background scene (when/why it came up) so the memo is self-recallable. */
+  background?: string
+  /** new: the concern shape. */
+  kind?: ConcernKind
+  /** status: the new lifecycle. */
+  status?: ConcernStatus
+  /** mention/status: the target top-level concern id. */
+  concernId?: string
+  /** Diary entries this proposal was read from. */
+  sourceDiaryIds: string[]
+  context?: string
+}
+
+/** Human lifecycle change of a top-level concern (audited). */
+export interface HumanSetConcernStatusRequest {
+  id: string
+  status: ConcernStatus
+  reason: string
+}
+
+/** Human delete of a concern subtree (audited, tombstone). */
+export interface HumanDeleteConcernRequest {
+  id: string
+  reason: string
+}
+
+/** Human acknowledgement of a pending diary entry (reviewed; no fact extracted). */
+export interface HumanAckDiaryRequest {
+  /** The diary entry id to mark processed. */
+  diaryId: string
+  /** Mandatory audited reason. */
+  reason: string
+}
+
+// ── ledger + human ops + admin ──────────────────────────────────────────────
+
+/** One append-only ledger block. */
+export interface LedgerBlock {
+  /** Monotone sequence number. */
+  seq: number
+  /** Epoch ms. */
+  ts: number
+  /** Operation name (refine/use/challenge/propose/adopt/...). */
+  op: string
+  /** The object type the operation touched. */
+  objectType: 'experience' | 'fact' | 'diary' | 'library' | 'concern'
+  /** The object id. */
+  objectId: string
+  /** Who acted: `agent:<sessionId>`, `human`, or `system`. */
+  actor: string
+  /** Human-supplied or diagnosis reason. */
+  reason?: string
+  /** JSON-encoded operation payload. */
+  payload: string
+  /** Previous block hash ('' for the genesis block). */
+  prevHash: string
+  /** Hash of this block chained to prevHash. */
+  hash: string
+}
+
+/** Ledger query filter (007 §2 view-side pagination; blocks themselves are never deleted). */
+export interface LedgerQueryRequest {
+  /** Filter by object type. */
+  objectType?: 'experience' | 'fact' | 'diary' | 'library' | 'concern'
+  /** Filter by object id. */
+  objectId?: string
+  /** Filter by operation name. */
+  op?: string
+  /** Max blocks, newest first. */
+  limit?: number
+  /** Skip this many newest blocks (server-side pagination). */
+  offset?: number
+  /** Inclusive lower bound on block seq (#). */
+  seqFrom?: number
+  /** Inclusive upper bound on block seq (#). */
+  seqTo?: number
+}
+
+/** Human pin/unpin. */
+export interface HumanPinRequest {
+  /** Experience family id. */
+  id: string
+  /** Pin or unpin. */
+  pinned: boolean
+  /** Required reason (audited). */
+  reason: string
+}
+
+/** Human delete (tombstone; the ledger keeps the fingerprint). */
+export interface HumanDeleteExperienceRequest {
+  /** Experience family id. */
+  id: string
+  /** Required reason (audited). */
+  reason: string
+}
+
+/** Human edit of one experience field set (creates no new revision). */
+export interface HumanEditExperienceRequest {
+  /** Experience family id. */
+  id: string
+  /** Required reason (audited). */
+  reason: string
+  /** New gist. */
+  gist?: string
+  /** New situations. */
+  situation?: string[]
+  /** New path. */
+  path?: ExperienceStep[]
+  /** New reasoning. */
+  reasoning?: string
+  /** New limits. */
+  limits?: string[]
+  /** New family tag. */
+  family?: string
+  /** New context/domain scope (006 §2). */
+  context?: string
+  /** New cross-context transferable flag (006 §2.4). */
+  globalFlag?: boolean
+}
+
+/** Human re-release of a cold-palace revision back to candidate (006 §3.2). */
+export interface HumanReleaseColdRequest {
+  /** Experience family id (must be cold). */
+  id: string
+  /** Required reason (audited). */
+  reason: string
+}
+
+/** Human injection: the fixed format is the ordinary experience structure. */
+export interface HumanAddExperienceRequest {
+  /** Positive path or confirmed dead end. */
+  kind: ExperienceKind
+  /** Task-family tag. */
+  family: string
+  /** One-sentence experience. */
+  gist: string
+  /** Situations where it applies. */
+  situation: string[]
+  /** The path itself. */
+  path: ExperienceStep[]
+  /** Judgment background. */
+  reasoning: string
+  /** Non-applicable boundaries. */
+  limits: string[]
+  /** Failure reason for negative injections. */
+  failureReason?: string
+  /** Context/domain scope (006 §2). */
+  context?: string
+  /** Required reason (audited). */
+  reason: string
+}
+
+/** Human fact operations. */
+export interface HumanAddFactRequest {
+  /** Profile slot. */
+  category: FactCategory
+  /** Slot key. */
+  factKey: string
+  /** Fact value. */
+  value: string
+  /** Immediately lock it (human-confirmed). */
+  locked?: boolean
+  /** Required reason (audited). */
+  reason: string
+}
+
+/** Human fact edit: supersedes the current version with a locked one. */
+export interface HumanEditFactRequest {
+  /** Current fact version id. */
+  factId: string
+  /** New value. */
+  value: string
+  /** Required reason (audited). */
+  reason: string
+}
+
+/** Human fact delete: tombstone the current version. */
+export interface HumanDeleteFactRequest {
+  /** Current fact version id. */
+  factId: string
+  /** Required reason (audited). */
+  reason: string
+}
+
+/** Human fact confirmation: lock or unlock a current version. */
+export interface HumanConfirmFactRequest {
+  /** Current fact version id. */
+  factId: string
+  /** Lock (confirm) or unlock. */
+  locked: boolean
+  /** Required reason (audited). */
+  reason: string
+}
+
+// ── stats + workbench + export ──────────────────────────────────────────────
+
+/** Aggregated library statistics for the workbench surface. */
+export interface MemoryStats {
+  /** Experience library counters. */
+  experiences: {
+    total: number
+    byStatus: Record<ExperienceStatus, number>
+    byKind: Record<ExperienceKind, number>
+    pinned: number
+    avgTrust: number
+  }
+  /** Semantic layer counters. */
+  facts: {
+    total: number
+    current: number
+    locked: number
+    conflictPending: number
+  }
+  /** Diary layer counters. */
+  diary: {
+    total: number
+    unextracted: number
+    extractions: number
+  }
+  /** Total append-only ledger blocks. */
+  ledgerBlocks: number
+  /** Recall telemetry. */
+  recall: {
+    events: number
+    negative: number
+    reportsAfterRecall: number
+  }
+  /** Consolidation cadence state (008 §1). */
+  consolidation: {
+    /** Epoch ms of the last consolidation run (0 = never). */
+    lastTs: number
+    /** Whether a consolidation run is due now. */
+    due: boolean
+    /** New experiences since the last consolidation. */
+    newSince: number
+  }
+}
+
+/** Workbench descriptor for the browser half (workspace matching + config view). */
+export interface MemoryWorkbenchInfo {
+  /** Canonical path of the monitoring workspace directory. */
+  workspacePath: string
+  /** Configured workspace title. */
+  workspaceTitle: string
+  /** Canonical SQLite database path. */
+  databasePath: string
+  /** Configured diary extraction cadence (entries). */
+  diaryExtractEvery: number
+  /** Configured injection budget (estimated tokens). */
+  injectionBudgetTokens: number
+}
+
+/** Experience list filter for the workbench. */
+export interface ExperienceListFilter {
+  /** Filter by lifecycle status. */
+  status?: ExperienceStatus
+  /** Filter by kind. */
+  kind?: ExperienceKind
+  /** Filter by family tag. */
+  family?: string
+  /** Filter by context/domain scope (006 §2). */
+  context?: string
+}
+
+/** One extraction-run record. */
+export interface ExtractionRecord {
+  /** Record id. */
+  id: string
+  /** Epoch ms. */
+  ts: number
+  /** What triggered the run. */
+  trigger: 'cadence' | 'manual'
+  /** One-line window summary. */
+  summary: string
+  /** Fact versions produced. */
+  producedFactIds: string[]
+  /** Diary entries consumed. */
+  diaryCount: number
+}
+
+/** One consolidation merge: fold several related experiences into one (008 §1). */
+export interface ConsolidateMerge {
+  /** Family tag of the consolidated experience. */
+  family: string
+  /** Kind of the consolidated experience. */
+  kind: ExperienceKind
+  /** Consolidated gist (the single transferable lesson). */
+  gist: string
+  /** Consolidated situation. */
+  situation: string[]
+  /** Consolidated success path. */
+  path: string[]
+  /** Consolidated reasoning (transferable, not a session chronicle). */
+  reasoning: string
+  /** Consolidated applicability limits. */
+  limits: string[]
+  /** Family ids of the experiences being merged (≥2). */
+  sourceIds: string[]
+  /** Optional note on why these belong together. */
+  note?: string
+}
+
+/** Request for one consolidation run. */
+export interface ConsolidateRequest {
+  /** Merge proposals; each produces one consolidated experience. */
+  merges: ConsolidateMerge[]
+  /** Optional free-form summary of the run. */
+  note?: string
+}
+
+/** Outcome of one consolidation run. */
+export interface ConsolidateResult {
+  /** Consolidated experiences created. */
+  consolidated: number
+  /** Source experiences archived (leave recall, recoverable). */
+  archived: number
+  /** Merge proposals skipped with a reason. */
+  skipped: { sourceIds: string[]; reason: string }[]
+}
+
+/** Ledger integrity check outcome. */
+export interface LedgerIntegrityResult {
+  /** Whether the hash chain verifies end to end. */
+  ok: boolean
+  /** Blocks checked. */
+  checked: number
+  /** First broken seq, when broken. */
+  brokenAt?: number
+}
+
+/** Full library export for experiments and migration. */
+export interface MemoryExport {
+  /** Export epoch ms. */
+  exportedAt: number
+  /** Schema marker. */
+  schemaVersion: number
+  /** Every experience revision. */
+  experiences: ExperienceSnapshot[]
+  /** Every counted use report. */
+  reports: {
+    id: string
+    experienceId: string
+    revision: number
+    outcome: ReportOutcome
+    attribution: FailureAttribution
+    counted: 'alpha' | 'beta' | 'none'
+    evidence?: EvidenceRef
+    dedupeKey?: string
+    ts: number
+  }[]
+  /** Every diary entry. */
+  diary: DiaryEntry[]
+  /** Every fact version. */
+  facts: FactEntry[]
+  /** Every extraction run. */
+  extractions: ExtractionRecord[]
+  /** Every recall event. */
+  recalls: { id: string; ts: number; situation: string; injectedIds: string[]; none: boolean }[]
+  /** The complete ledger. */
+  ledger: LedgerBlock[]
+}

@@ -1,0 +1,22 @@
+# daoing-dsh-memory bundle patch
+#
+# Inserts the self-evolving memory plugin into a DSH profile composition.
+# Applied as a patch layer by `dsh plugin add` (the CLI reconciles this
+# package into `dsh.profile.bundles` because its manifest declares
+# `dsh.bundle.patch`).
+#
+# Row ids `memory` / `memory-tools` follow the DSH memory convention. Patch
+# rows are last-write-wins per id, so if the profile's base bundle already
+# carries an in-box memory row, installing this plugin re-points that row to
+# the daoing-dsh-memory implementation instead of duplicating it. If the
+# profile has no memory row yet, this patch simply adds one.
+#
+# The browser workbench half rides the `memory` row's dsh.client declaration
+# in package.json; the model-facing tools live behind the `memory-tools` row.
+
+- insert:
+    - id: memory
+      name: 'daoing-dsh-memory'
+
+    - id: memory-tools
+      name: 'daoing-dsh-memory/tools'

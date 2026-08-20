@@ -1,0 +1,1 @@
+{"version":3,"file":"LedgerPage.d.ts","sourceRoot":"","sources":["../../../src/client/LedgerPage.tsx"],"names":[],"mappings":"AAAA;;;;GAIG;AAIH,OAAO,KAAK,EAAE,sBAAsB,EAAE,MAAM,cAAc,CAAA;AA6C1D,MAAM,WAAW,eAAe;IAC9B,qCAAqC;IACrC,OAAO,EAAE,sBAAsB,CAAA;CAChC;AAED,6BAA6B;AAC7B,wBAAgB,UAAU,CAAC,EAAE,OAAO,EAAE,EAAE,eAAe,GAAG,KAAK,CAAC,YAAY,CA4K3E"}
