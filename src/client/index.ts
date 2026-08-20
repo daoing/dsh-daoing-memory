@@ -13,7 +13,7 @@ import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/c
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type { RemoteResult, TypertClientRemote } from '@deepseek-ai/dsh-typert-protocol'
-import memoryRemote from 'daoing-dsh-memory/remote'
+import memoryRemote from 'dsh-daoing-memory/remote'
 import type { MemoryRemoteActions } from './actions.ts'
 import { MemoryNavSection } from './MemoryNavSection.tsx'
 import { MemoryWorkbench } from './Workbench.tsx'

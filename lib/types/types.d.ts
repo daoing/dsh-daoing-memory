@@ -2,7 +2,7 @@
  * Memory system wire vocabulary: experience lifecycle, recall adjudication,
  * use reports with attribution, the diary/fact semantic layer, and the
  * append-only ledger. Types only — no runtime code.
- * @module daoing-dsh-memory/types
+ * @module dsh-daoing-memory/types
  */
 /** Lifecycle status of one experience revision (005 §3 state machine + 006 §3 cold palace). */
 export type ExperienceStatus = 'candidate' | 'live' | 'challenged' | 'superseded' | 'archived' | 'cold';

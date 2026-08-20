@@ -2,7 +2,7 @@
 
 [English →](./BUILDING.md)
 
-`daoing-dsh-memory` 如何产出、如何发布、如何上架——以及关于“构建独立性”的如实说明。
+`dsh-daoing-memory` 如何产出、如何发布、如何上架——以及关于“构建独立性”的如实说明。
 
 ---
 
@@ -48,22 +48,22 @@ npm publish --dry-run
 npm publish
 ```
 
-`files` 字段把 tarball 限定为 `lib/`、`skill/`、`cordis.patch.yml`、`README.md`、`LICENSE`。发布后，`dsh plugin --profile web add daoing-dsh-memory` 即可从 registry 解析。
+`files` 字段把 tarball 限定为 `lib/`、`skill/`、`cordis.patch.yml`、`README.md`、`LICENSE`。发布后，`dsh plugin --profile web add dsh-daoing-memory` 即可从 registry 解析。
 
 ## 上架 DSH 插件市场
 
 DSH 插件市场通过 GitHub 仓库上的 **`dsh-plugin`** topic 来发现插件。上架步骤：
 
-1. 把本仓库推到 GitHub（如 `daoing/daoing-dsh-memory`）。
+1. 把本仓库推到 GitHub（如 `daoing/dsh-daoing-memory`）。
 2. 在仓库 **About** 设置里加上 topic `dsh-plugin`。
 3. 保留 `dsh.bundle.patch` 声明（正是它让包能作为 profile 层被安装）。
 
 之后它就能被市场发现，也能直接按 git 地址安装：
 
 ```sh
-dsh plugin --profile web add github:daoing/daoing-dsh-memory
+dsh plugin --profile web add github:daoing/dsh-daoing-memory
 ```
 
 ## 改名说明
 
-分发包名为 `daoing-dsh-memory`。内部，构建产物一致地携带同一标识（module-loader bundle id、typert 的 `package` 字段、RPC 方法前缀），因此 host 与 client 两半彼此一致。若你改包名，请重新生成产物，确保所有自引用与新名字匹配。
+分发包名为 `dsh-daoing-memory`。内部，构建产物一致地携带同一标识（module-loader bundle id、typert 的 `package` 字段、RPC 方法前缀），因此 host 与 client 两半彼此一致。若你改包名，请重新生成产物，确保所有自引用与新名字匹配。

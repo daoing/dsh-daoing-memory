@@ -1,4 +1,4 @@
-# Design of daoing-dsh-memory
+# Design of dsh-daoing-memory
 
 [中文 →](./DESIGN.zh-CN.md)
 
@@ -10,7 +10,7 @@ This document explains **what the plugin is for**, **the thinking behind its str
 
 An LLM agent forgets everything the moment a session ends. The usual fixes — stuffing conversation into a vector store, or letting the model scribble into a key-value blob — both degrade quickly: one buries signal in noise, the other lets a single hallucination poison every future session.
 
-`daoing-dsh-memory` exists to give a DSH agent a **persistent memory that improves with use and stays trustworthy**. Concretely it provides:
+`dsh-daoing-memory` exists to give a DSH agent a **persistent memory that improves with use and stays trustworthy**. Concretely it provides:
 
 - A **diary** the agent writes during a session (raw, cheap, low-trust).
 - **Semantic memory** distilled from the diary: durable *facts* about the user and *concerns* the user cares about.

@@ -15,7 +15,7 @@
 `dsh plugin add <包名>` 从 npm 解析（发布后更省事）；`dsh plugin add github:owner/repo` 直接从源码装（发布前可用，或用于固定分支/提交）。两者结果一致。
 
 **会和内置的 memory 插件冲突吗？**
-profile patch 按行 id 后写覆盖。安装 `daoing-dsh-memory` 会把 `memory` / `memory-tools` 行重新指向本实现，而不是新增一份。见 INSTALL 的环境二。
+profile patch 按行 id 后写覆盖。安装 `dsh-daoing-memory` 会把 `memory` / `memory-tools` 行重新指向本实现，而不是新增一份。见 INSTALL 的环境二。
 
 **召回怎么判断相关性？**
 按关键词/情境与查询匹配。经验库是进程级全局的，因此除非你显式传 `context` 收窄，否则每条经验都是候选。

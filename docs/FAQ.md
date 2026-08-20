@@ -15,7 +15,7 @@ Stop DSH, then delete `memory.db` from the DSH storage directory. This is the on
 `dsh plugin add <name>` resolves from npm (convenient once published); `dsh plugin add github:owner/repo` installs straight from source (useful before publishing, or to pin a branch/commit). Both produce the same result.
 
 **Does this conflict with an in-box memory plugin?**
-Profile patches are last-write-wins per row id. Installing `daoing-dsh-memory` re-points the `memory` / `memory-tools` rows to this implementation rather than duplicating them. See INSTALL, Environment 2.
+Profile patches are last-write-wins per row id. Installing `dsh-daoing-memory` re-points the `memory` / `memory-tools` rows to this implementation rather than duplicating them. See INSTALL, Environment 2.
 
 **How does recall decide what is relevant?**
 By keyword/situation matching against the query. The library is process-global, so every experience is a candidate unless you pass an explicit `context` to narrow it.

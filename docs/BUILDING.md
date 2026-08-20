@@ -2,7 +2,7 @@
 
 [中文 →](./BUILDING.zh-CN.md)
 
-How `daoing-dsh-memory` is produced, published, and listed — and the honest status of its build independence.
+How `dsh-daoing-memory` is produced, published, and listed — and the honest status of its build independence.
 
 ---
 
@@ -49,22 +49,22 @@ npm publish --dry-run
 npm publish
 ```
 
-The `files` field limits the tarball to `lib/`, `skill/`, `cordis.patch.yml`, `README.md`, and `LICENSE`. After publishing, `dsh plugin --profile web add daoing-dsh-memory` resolves it from the registry.
+The `files` field limits the tarball to `lib/`, `skill/`, `cordis.patch.yml`, `README.md`, and `LICENSE`. After publishing, `dsh plugin --profile web add dsh-daoing-memory` resolves it from the registry.
 
 ## Listing on the DSH plugin marketplace
 
 The DSH plugin marketplace discovers plugins from GitHub repositories tagged with the **`dsh-plugin`** topic. To list this project:
 
-1. Push this repository to GitHub (e.g. `daoing/daoing-dsh-memory`).
+1. Push this repository to GitHub (e.g. `daoing/dsh-daoing-memory`).
 2. In the repo **About** settings, add the topic `dsh-plugin`.
 3. Keep the `dsh.bundle.patch` declaration (that is what makes it installable as a profile layer).
 
 After that it is discoverable via the marketplace and installable directly by git URL:
 
 ```sh
-dsh plugin --profile web add github:daoing/daoing-dsh-memory
+dsh plugin --profile web add github:daoing/dsh-daoing-memory
 ```
 
 ## Renaming note
 
-The distributed package is named `daoing-dsh-memory`. Internally, the built artifacts carry the same identifier consistently (module-loader bundle id, typert `package` field, and RPC method prefixes), so the host and client halves agree. If you rename the package, regenerate the artifacts so every self-reference matches the new name.
+The distributed package is named `dsh-daoing-memory`. Internally, the built artifacts carry the same identifier consistently (module-loader bundle id, typert `package` field, and RPC method prefixes), so the host and client halves agree. If you rename the package, regenerate the artifacts so every self-reference matches the new name.

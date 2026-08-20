@@ -5,7 +5,7 @@
  * time. Ledger appends happen in-process through MemoryCore, which chains
  * each new block to the live head, so a broken chain at attach time means
  * the persisted file was corrupted or tampered with externally.
- * @module daoing-dsh-memory/invariant
+ * @module dsh-daoing-memory/invariant
  */
 import type { Context } from '@deepseek-ai/cordis';
 /** Cordis companion plugin name. */

@@ -5,7 +5,7 @@
  * (MemoryService). The monitoring UI is an independent left-sidebar nav group
  * (browser half), not a workspace; this host half performs no workspace
  * adoption.
- * @module daoing-dsh-memory
+ * @module dsh-daoing-memory
  */
 
 import { mkdirSync } from 'node:fs'

@@ -18,7 +18,7 @@
  * - Ledger: append-only hash-chained event sourcing for every mutation,
  *   including every human operation.
  *
- * @module daoing-dsh-memory/core
+ * @module dsh-daoing-memory/core
  */
 import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from './types.ts';
 import { MemoryStore } from './store.ts';

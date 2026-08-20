@@ -41,7 +41,7 @@
 - **`memory-extraction` skill**：随包附带的引导，教 agent 何时/如何高质量提炼。
 
 **打包（本仓库）**
-- 可分发安装包 `daoing-dsh-memory`，带 `dsh.bundle.patch` 实现 profile 自动接线。
+- 可分发安装包 `dsh-daoing-memory`，带 `dsh.bundle.patch` 实现 profile 自动接线。
 - `lib/` 里自带预构建的 host + 浏览器产物（安装不做构建）。
 - 一条命令放置 skill 的辅助脚本（`scripts/install-skill.mjs`）。
 

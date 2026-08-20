@@ -1,4 +1,4 @@
-# Installing daoing-dsh-memory
+# Installing dsh-daoing-memory
 
 [中文 →](./INSTALL.zh-CN.md)
 
@@ -23,7 +23,7 @@ The plugin declares `@deepseek-ai/*` framework packages as **peer dependencies**
 ### Channel A — from npm (package name)
 
 ```sh
-dsh plugin --profile web add daoing-dsh-memory
+dsh plugin --profile web add dsh-daoing-memory
 ```
 
 This resolves the package from the npm registry. Use this once the package is published.
@@ -31,10 +31,10 @@ This resolves the package from the npm registry. Use this once the package is pu
 ### Channel B — from GitHub (git URL)
 
 ```sh
-dsh plugin --profile web add github:daoing/daoing-dsh-memory
+dsh plugin --profile web add github:daoing/dsh-daoing-memory
 ```
 
-Equivalent forms also work: `git+https://github.com/daoing/daoing-dsh-memory.git`, optionally pinned with `#<branch|tag|commit>`.
+Equivalent forms also work: `git+https://github.com/daoing/dsh-daoing-memory.git`, optionally pinned with `#<branch|tag|commit>`.
 
 Because this package ships prebuilt `lib/` and declares **no install-time build scripts**, a git install does not need to compile anything — pnpm simply materializes the files. (Many git-hosted DSH plugins build via a `prepare` script and then require an `allowBuilds` entry in the profile's `pnpm-workspace.yaml`; this package deliberately avoids that friction.)
 
@@ -45,9 +45,9 @@ This is the common case: you installed DSH with the official command and run the
 **Install**
 
 ```sh
-dsh plugin --profile web add daoing-dsh-memory        # from npm
+dsh plugin --profile web add dsh-daoing-memory        # from npm
 # or
-dsh plugin --profile web add github:daoing/daoing-dsh-memory   # from GitHub
+dsh plugin --profile web add github:daoing/dsh-daoing-memory   # from GitHub
 ```
 
 The CLI adds the package to the `web` profile and, because the package declares `dsh.bundle.patch`, automatically appends it to the profile's bundle stack (`dsh.profile.bundles`). No manual wiring is needed.
@@ -55,7 +55,7 @@ The CLI adds the package to the `web` profile and, because the package declares 
 **Place the extraction skill**
 
 ```sh
-node node_modules/daoing-dsh-memory/scripts/install-skill.mjs
+node node_modules/dsh-daoing-memory/scripts/install-skill.mjs
 ```
 
 This copies `skill/memory-extraction.md` into your skills directory (`$DSH_HOME/skills`, falling back to `~/.dsh/skills`). It never overwrites an existing file; add `--force` to replace it. You may instead copy the file by hand — any location DSH scans for skills works.
@@ -67,7 +67,7 @@ This copies `skill/memory-extraction.md` into your skills directory (`$DSH_HOME/
 ```sh
 # optionally remove the skill first
 rm "$DSH_HOME/skills/memory-extraction.md"      # or ~/.dsh/skills/...
-dsh plugin --profile web remove daoing-dsh-memory
+dsh plugin --profile web remove dsh-daoing-memory
 ```
 
 Removing the package also removes its rows from the profile bundle stack automatically. Your stored memory (the SQLite database under your DSH storage) is **not** deleted by uninstall — see the FAQ if you want to wipe it.
@@ -79,15 +79,15 @@ Here you cloned the DSH monorepo and run it from source (e.g. via the CLI's `web
 **Install** — the same `dsh plugin` command works against your source profile:
 
 ```sh
-dsh plugin --profile web add github:daoing/daoing-dsh-memory
+dsh plugin --profile web add github:daoing/dsh-daoing-memory
 ```
 
-> **Note on the in-box memory rows.** The source monorepo's base bundle already ships memory rows (`id: memory`, `id: memory-tools`). Profile patches are *last-write-wins per row id*, so installing `daoing-dsh-memory` **re-points** those existing rows to the `daoing-dsh-memory` implementation rather than duplicating them. If you instead want to run it side by side for comparison, rename the rows in your local `cordis.patch.yml`.
+> **Note on the in-box memory rows.** The source monorepo's base bundle already ships memory rows (`id: memory`, `id: memory-tools`). Profile patches are *last-write-wins per row id*, so installing `dsh-daoing-memory` **re-points** those existing rows to the `dsh-daoing-memory` implementation rather than duplicating them. If you instead want to run it side by side for comparison, rename the rows in your local `cordis.patch.yml`.
 
 If you are *developing* the plugin and want live source iteration, you can install your local checkout by path instead:
 
 ```sh
-dsh plugin --profile web add /absolute/path/to/daoing-dsh-memory
+dsh plugin --profile web add /absolute/path/to/dsh-daoing-memory
 ```
 
 (For deep monorepo development you may prefer to keep the package inside the DSH workspace; see `docs/BUILDING.md`.)
@@ -97,7 +97,7 @@ dsh plugin --profile web add /absolute/path/to/daoing-dsh-memory
 **Uninstall**
 
 ```sh
-dsh plugin --profile web remove daoing-dsh-memory
+dsh plugin --profile web remove dsh-daoing-memory
 ```
 
 ## Verifying the install
@@ -113,8 +113,8 @@ If the Memory section is missing, the plugin likely did not join the bundle stac
 
 ## Troubleshooting
 
-- **`dsh plugin` says the package "declares no dsh.bundle"** — you installed something that is not this plugin (or a stale build). Ensure you are installing `daoing-dsh-memory` and that its `package.json` declares `dsh.bundle.patch`.
-- **Memory section missing after restart** — check the profile's bundle list includes `daoing-dsh-memory` (the CLI reconciles it on install). Restart DSH fully.
+- **`dsh plugin` says the package "declares no dsh.bundle"** — you installed something that is not this plugin (or a stale build). Ensure you are installing `dsh-daoing-memory` and that its `package.json` declares `dsh.bundle.patch`.
+- **Memory section missing after restart** — check the profile's bundle list includes `dsh-daoing-memory` (the CLI reconciles it on install). Restart DSH fully.
 - **Row conflict in a source checkout** — the install re-points the in-box `memory` rows (by design). See the note in Environment 2.
 - **A *different* git plugin asks for `allowBuilds`** — that plugin builds on install; add the key pnpm prints to the profile's `pnpm-workspace.yaml`. This package does not require it.
 - **Skill not picked up** — confirm `memory-extraction.md` landed in the directory DSH scans for skills (`$DSH_HOME/skills`) and restart.

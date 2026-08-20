@@ -1,10 +1,10 @@
-# daoing-dsh-memory
+# dsh-daoing-memory
 
 > 面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的自进化记忆系统 —— 挣得式经验、日记/事实语义记忆、关心事项追踪，以及只增不删的审计账本。
 
 [English →](./README.md)
 
-没有记忆的 agent，每个会话都从零开始。`daoing-dsh-memory` 为 DSH agent 提供一套**持久、能自我进化**的记忆，而且这份记忆是靠*使用*一点点“挣”来的：它记日记、从中提炼关于用户的持久事实与未了心事、沉淀经过验证的经验、在需要时召回相关内容、发现错了就修订，并把每一次变更都记进可审计的账本。
+没有记忆的 agent，每个会话都从零开始。`dsh-daoing-memory` 为 DSH agent 提供一套**持久、能自我进化**的记忆，而且这份记忆是靠*使用*一点点“挣”来的：它记日记、从中提炼关于用户的持久事实与未了心事、沉淀经过验证的经验、在需要时召回相关内容、发现错了就修订，并把每一次变更都记进可审计的账本。
 
 整套设计围绕四个字 —— **生 · 用 · 修 · 记**。
 
@@ -14,7 +14,7 @@
 
 市面上大多数“记忆”方案，要么把原始对话一股脑灌进向量库，要么让模型随意往一个键值块里写东西。两者在实践中都会失败：前者让信号淹没在噪声里，后者让一次幻觉污染此后所有会话。
 
-`daoing-dsh-memory` 采取了不同的立场：
+`dsh-daoing-memory` 采取了不同的立场：
 
 - **记忆必须靠挣。** 一条经验以低信任的*候选*身份诞生，只有在真实使用中被反复证实后才晋升。没有任何东西能靠“钦定”直接获得高信任。
 - **两种截然不同的记忆。** *语义记忆*（关于用户的持久事实 + 他们在意的未了心事）与*经验记忆*（带生命周期的 how-to 知识）分离，二者的写入、召回与治理方式各不相同。
@@ -43,13 +43,13 @@
 
 ```sh
 # 从 npm（发布后）
-dsh plugin --profile web add daoing-dsh-memory
+dsh plugin --profile web add dsh-daoing-memory
 
 # 或直接从 GitHub
-dsh plugin --profile web add github:daoing/daoing-dsh-memory
+dsh plugin --profile web add github:daoing/dsh-daoing-memory
 
 # 把提炼 skill 放到 DSH 加载 skill 的目录
-node node_modules/daoing-dsh-memory/scripts/install-skill.mjs
+node node_modules/dsh-daoing-memory/scripts/install-skill.mjs
 ```
 
 然后重启 DSH。记忆工具即对 agent 可用，画像快照开始注入，网页侧边栏出现 **Memory** 分区。
@@ -73,7 +73,7 @@ node node_modules/daoing-dsh-memory/scripts/install-skill.mjs
 ## 目录结构
 
 ```
-daoing-dsh-memory/
+dsh-daoing-memory/
 ├── lib/                    # 预构建产物（host + 浏览器 bundle + typert）
 ├── src/                    # TypeScript 源码（供参考与迭代）
 ├── skill/                  # 随包附带的 memory-extraction skill（独立 .md）

@@ -3,7 +3,7 @@
  * Every method takes the calling Agent first (Typert wire identity); the
  * library itself is process-global — one memory shared by every session.
  * Human operations carry an audited reason and land in the ledger.
- * @module daoing-dsh-memory/service
+ * @module dsh-daoing-memory/service
  */
 import type { Context } from '@deepseek-ai/cordis';
 import type { Agent } from '@deepseek-ai/dsh-agent';

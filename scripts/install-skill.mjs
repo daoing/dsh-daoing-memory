@@ -1,12 +1,12 @@
 /**
  * Install the bundled memory-extraction skill into the DSH skills directory.
  *
- * daoing-dsh-memory ships the extraction skill as a standalone Markdown file
+ * dsh-daoing-memory ships the extraction skill as a standalone Markdown file
  * (skill/memory-extraction.md) rather than embedding it, so you can read and
  * hand-edit it like any other skill. Run this once after installing the
  * plugin to place it where DSH loads skills from:
  *
- *   node node_modules/daoing-dsh-memory/scripts/install-skill.mjs
+ *   node node_modules/dsh-daoing-memory/scripts/install-skill.mjs
  *
  * Idempotent and non-destructive: if the skill already exists in the target
  * it is left untouched (your edits are never clobbered). Pass --force to
@@ -26,7 +26,7 @@ const source = new URL('../skill/memory-extraction.md', import.meta.url)
 const target = join(skillsDir, 'memory-extraction.md')
 
 if (!existsSync(source)) {
-  console.error('daoing-dsh-memory: bundled skill not found at', source.pathname ?? source)
+  console.error('dsh-daoing-memory: bundled skill not found at', source.pathname ?? source)
   process.exit(1)
 }
 if (existsSync(target) && !force) {

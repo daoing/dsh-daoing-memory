@@ -41,7 +41,7 @@ The design was worked out over a series of numbered design notes (001–010 in t
 - **`memory-extraction` skill**: bundled guidance teaching the agent when/how to extract well.
 
 **Packaging (this repo)**
-- Distributable package `daoing-dsh-memory` with a `dsh.bundle.patch` for automatic profile wiring.
+- Distributable package `dsh-daoing-memory` with a `dsh.bundle.patch` for automatic profile wiring.
 - Prebuilt host + browser artifacts shipped in `lib/` (install performs no build).
 - One-command skill placement helper (`scripts/install-skill.mjs`).
 

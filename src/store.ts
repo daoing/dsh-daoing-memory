@@ -3,7 +3,7 @@
  * use reports, diary, facts, extractions, recall telemetry, and the
  * append-only hash-chained ledger. Uses node:sqlite (DatabaseSync) so the
  * library runs with zero external services.
- * @module daoing-dsh-memory/store
+ * @module dsh-daoing-memory/store
  */
 
 import { createHash } from 'node:crypto'

@@ -1,10 +1,10 @@
-# daoing-dsh-memory
+# dsh-daoing-memory
 
 > Self-evolving memory for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) — earned experiences, diary/fact semantic memory, concern tracking, and an append-only audit ledger.
 
 [中文文档 →](./README.zh-CN.md)
 
-An agent without memory starts from zero every session. `daoing-dsh-memory` gives a DSH agent a **persistent, self-improving memory** that it *earns* through use: it keeps a diary, distills durable facts and open concerns about the user, accumulates verified experiences, recalls what is relevant, revises what turned out wrong, and records every change in an auditable ledger.
+An agent without memory starts from zero every session. `dsh-daoing-memory` gives a DSH agent a **persistent, self-improving memory** that it *earns* through use: it keeps a diary, distills durable facts and open concerns about the user, accumulates verified experiences, recalls what is relevant, revises what turned out wrong, and records every change in an auditable ledger.
 
 The design follows four verbs — **生 · 用 · 修 · 记** (*Generate · Use · Revise · Record*).
 
@@ -14,7 +14,7 @@ The design follows four verbs — **生 · 用 · 修 · 记** (*Generate · Use
 
 Most "memory" bolt-ons either dump raw conversation into a vector store, or let the model write anything it likes into a key-value blob. Both fail in practice: the first buries signal in noise, the second lets a single hallucination poison every future session.
 
-`daoing-dsh-memory` takes a different stance:
+`dsh-daoing-memory` takes a different stance:
 
 - **Memory must be earned.** An experience starts as a low-trust *candidate* and is promoted only after it is corroborated by real use. Nothing reaches high trust by fiat.
 - **Two distinct memories.** *Semantic* memory (durable facts about the user + open concerns they care about) is separated from *experiential* memory (how-to knowledge with a lifecycle). They are written, recalled, and governed differently.
@@ -43,13 +43,13 @@ Quick start for an officially installed DSH:
 
 ```sh
 # from npm (once published)
-dsh plugin --profile web add daoing-dsh-memory
+dsh plugin --profile web add dsh-daoing-memory
 
 # or straight from GitHub
-dsh plugin --profile web add github:daoing/daoing-dsh-memory
+dsh plugin --profile web add github:daoing/dsh-daoing-memory
 
 # place the extraction skill where DSH loads skills from
-node node_modules/daoing-dsh-memory/scripts/install-skill.mjs
+node node_modules/dsh-daoing-memory/scripts/install-skill.mjs
 ```
 
 Then restart DSH. The memory tools become available to your agent, the profile snapshot starts being injected, and a **Memory** section appears in the web sidebar.
@@ -73,7 +73,7 @@ The architecture, the trust/earning model, the data schema, and the anti-polluti
 ## Project layout
 
 ```
-daoing-dsh-memory/
+dsh-daoing-memory/
 ├── lib/                    # prebuilt artifacts (host + browser bundle + typert)
 ├── src/                    # TypeScript source (for reference & iteration)
 ├── skill/                  # bundled memory-extraction skill (standalone .md)
