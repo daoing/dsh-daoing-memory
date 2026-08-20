@@ -79,7 +79,7 @@ dsh-daoing-memory/
 ├── skill/                  # 随包附带的 memory-extraction skill（独立 .md）
 ├── cordis.patch.yml        # 把插件接进 DSH 的 profile patch
 ├── scripts/                # prepare 与 install-skill 辅助脚本
-└── docs/                   # INSTALL · DESIGN · STATUS · BUILDING · FAQ
+└── docs/                   # INSTALL · DESIGN · STATUS · BUILDING · FAQ · MIGRATION
 ```
 
 ## 构建与发布

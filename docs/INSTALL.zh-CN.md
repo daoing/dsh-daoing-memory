@@ -119,4 +119,4 @@ dsh plugin --profile web remove dsh-daoing-memory
 - **别的 git 插件要求 `allowBuilds`** —— 那个插件在安装时构建；把 pnpm 打印的键加进 profile 的 `pnpm-workspace.yaml`。本包不需要。
 - **skill 没生效** —— 确认 `memory-extraction.md` 已落到 DSH 扫描的 skill 目录（`$DSH_HOME/skills`），然后重启。
 
-另见 [FAQ.zh-CN.md](./FAQ.zh-CN.md) 与 [BUILDING.zh-CN.md](./BUILDING.zh-CN.md)。
+另见 [FAQ.zh-CN.md](./FAQ.zh-CN.md)、[BUILDING.zh-CN.md](./BUILDING.zh-CN.md) 与 [MIGRATION.zh-CN.md](./MIGRATION.zh-CN.md)（数据存放与迁移）。

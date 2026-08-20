@@ -119,4 +119,4 @@ If the Memory section is missing, the plugin likely did not join the bundle stac
 - **A *different* git plugin asks for `allowBuilds`** — that plugin builds on install; add the key pnpm prints to the profile's `pnpm-workspace.yaml`. This package does not require it.
 - **Skill not picked up** — confirm `memory-extraction.md` landed in the directory DSH scans for skills (`$DSH_HOME/skills`) and restart.
 
-See also [FAQ.md](./FAQ.md) and [BUILDING.md](./BUILDING.md).
+See also [FAQ.md](./FAQ.md), [BUILDING.md](./BUILDING.md), and [MIGRATION.md](./MIGRATION.md) (data location & migration).

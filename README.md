@@ -79,7 +79,7 @@ dsh-daoing-memory/
 ├── skill/                  # bundled memory-extraction skill (standalone .md)
 ├── cordis.patch.yml        # profile patch that wires the plugin into DSH
 ├── scripts/                # prepare + install-skill helpers
-└── docs/                   # INSTALL · DESIGN · STATUS · BUILDING · FAQ
+└── docs/                   # INSTALL · DESIGN · STATUS · BUILDING · FAQ · MIGRATION
 ```
 
 ## Building & publishing
