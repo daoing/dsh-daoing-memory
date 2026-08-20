@@ -3,7 +3,10 @@
 [中文 →](./FAQ.zh-CN.md)
 
 **Where is my memory stored?**
-In a single SQLite database, `memory.db`, under your DSH storage directory (created on first write). It is shared by every session.
+In a single SQLite database at `<DSH_HOME>/storages/memory.db` (created on first write; `DSH_HOME` defaults to `~/.dsh`). It is shared by every session in the process. See [MIGRATION.md](./MIGRATION.md).
+
+**How do I move my memory to another machine?**
+Copy the database file: stop DSH, copy `<old DSH_HOME>/storages/memory.db` to the same path on the target, then start DSH. It carries everything — including the audit ledger — and upgrades its schema automatically across versions. See [MIGRATION.md](./MIGRATION.md).
 
 **Does uninstalling delete my memory?**
 No. `dsh plugin remove` removes the plugin code and its profile rows, but leaves `memory.db` in place. Reinstalling picks the memory back up.

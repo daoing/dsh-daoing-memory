@@ -3,7 +3,10 @@
 [English →](./FAQ.md)
 
 **我的记忆存在哪里？**
-存在一个 SQLite 库 `memory.db` 里，位于你的 DSH 存储目录（首次写入时创建），被所有会话共享。
+存在一个 SQLite 库 `<DSH_HOME>/storages/memory.db` 里（首次写入时创建；`DSH_HOME` 默认是 `~/.dsh`），被进程内所有会话共享。见 [MIGRATION.zh-CN.md](./MIGRATION.zh-CN.md)。
+
+**怎么把记忆迁移到另一台机器？**
+拷贝数据库文件：停掉 DSH，把 `<旧 DSH_HOME>/storages/memory.db` 拷到目标环境同路径，再启动 DSH。它带走全部数据——包括审计账本——并能在跨版本时自动升级表结构。见 [MIGRATION.zh-CN.md](./MIGRATION.zh-CN.md)。
 
 **卸载会删掉我的记忆吗？**
 不会。`dsh plugin remove` 移除插件代码与其 profile 行，但保留 `memory.db`。重新安装即可找回记忆。
