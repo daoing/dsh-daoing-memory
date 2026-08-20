@@ -1,6 +1,6 @@
 # daoing-dsh-memory
 
-> Self-evolving memory for [DeepSeek Harness](https://github.com/deepseek-ai/dsh) (DSH) — earned experiences, diary/fact semantic memory, concern tracking, and an append-only audit ledger.
+> Self-evolving memory for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) — earned experiences, diary/fact semantic memory, concern tracking, and an append-only audit ledger.
 
 [中文文档 →](./README.zh-CN.md)
 

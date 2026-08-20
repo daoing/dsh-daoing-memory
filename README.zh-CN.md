@@ -1,6 +1,6 @@
 # daoing-dsh-memory
 
-> 面向 [DeepSeek Harness](https://github.com/deepseek-ai/dsh)（DSH）的自进化记忆系统 —— 挣得式经验、日记/事实语义记忆、关心事项追踪，以及只增不删的审计账本。
+> 面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的自进化记忆系统 —— 挣得式经验、日记/事实语义记忆、关心事项追踪，以及只增不删的审计账本。
 
 [English →](./README.md)
 
