@@ -20,7 +20,7 @@
  *
  * @module dsh-daoing-memory/core
  */
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from './types.ts';
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult, SkillArtifact, SkillForm, SkillStatus, ReviewSkillRequest, PublishSkillRequest } from './types.ts';
 import { MemoryStore } from './store.ts';
 /** Tunable mechanism parameters, all overridable from the plugin config. */
 export interface MemoryCoreConfig {
@@ -184,6 +184,37 @@ export declare class MemoryCore {
      * the extraction prompt.
      */
     getDeletionFeedback(): ExperienceSnapshot | undefined;
+    /**
+     * Create a skill artifact draft from LLM-generated content.
+     * @param experienceId - parent experience family_id.
+     * @param form - output form (skill_md or script_mjs).
+     * @param content - the LLM-generated skill/script content.
+     * @param draftPath - file path where the draft is saved.
+     * @param actor - who triggered the generation.
+     * @returns the created skill artifact.
+     */
+    createSkillDraft(experienceId: string, form: SkillForm, content: string, draftPath: string, actor: string): SkillArtifact;
+    /**
+     * Review a skill artifact: approve or reject.
+     */
+    reviewSkill(request: ReviewSkillRequest, actor: string): SkillArtifact;
+    /**
+     * Publish a skill artifact: copy draft to $DSH_HOME/skills/ and mark as published.
+     * The actual file copy is done by the service layer; this method updates the DB record.
+     */
+    publishSkill(request: PublishSkillRequest, publishedPath: string, actor: string): SkillArtifact;
+    /** List skill artifacts, optionally filtered. */
+    listSkillArtifacts(filter?: {
+        parentExperienceId?: string;
+        status?: SkillStatus;
+    }): SkillArtifact[];
+    /** Get a single skill artifact. */
+    getSkillArtifact(id: string): SkillArtifact | undefined;
+    /**
+     * Check if an experience is a candidate for skill conversion.
+     * Criteria: live status, enough recall events, complex path (≥3 steps).
+     */
+    isSkillCandidate(experienceId: string): boolean;
     /** Human pin/unpin: pinned cards keep the trust floor and escape budgets. */
     humanPin(request: HumanPinRequest, actor: MemoryActor): ExperienceSnapshot;
     /** Human delete: tombstone the family; the ledger keeps the fingerprint. */

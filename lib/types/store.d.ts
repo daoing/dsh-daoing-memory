@@ -6,9 +6,9 @@
  * @module dsh-daoing-memory/store
  */
 import type { DatabaseSync } from 'node:sqlite';
-import type { ConcernEntry, ConcernStatus, ConcernTree, DiaryEntry, EvidenceRef, ExperienceSnapshot, ExperienceStatus, ExtractionRecord, FactEntry, LedgerBlock } from './types.ts';
+import type { ConcernEntry, ConcernStatus, ConcernTree, DiaryEntry, EvidenceRef, ExperienceSnapshot, ExperienceStatus, ExtractionRecord, FactEntry, LedgerBlock, SkillArtifact, SkillStatus } from './types.ts';
 /** Monotone store schema version. v1→v2 is an additive ALTER migration (see open()). */
-export declare const MEMORY_SCHEMA_VERSION = 5;
+export declare const MEMORY_SCHEMA_VERSION = 6;
 /** Half-life (ms) of the recency weighting applied to verification samples. */
 export declare const TRUST_HALF_LIFE_MS: number;
 /** One concerns-table row (007 §2). */
@@ -256,5 +256,17 @@ export declare class MemoryStore {
     private rowToLedger;
     private rowToDiary;
     private rowToFact;
+    /** Insert or update a skill artifact. */
+    upsertSkillArtifact(artifact: SkillArtifact): void;
+    /** Get a skill artifact by id. */
+    getSkillArtifact(id: string): SkillArtifact | undefined;
+    /** List skill artifacts, optionally filtered by parent experience or status. */
+    listSkillArtifacts(filter?: {
+        parentExperienceId?: string;
+        status?: SkillStatus;
+    }): SkillArtifact[];
+    /** Count skill artifacts by status. */
+    countSkillArtifacts(status?: SkillStatus): number;
+    private rowToSkillArtifact;
 }
 //# sourceMappingURL=store.d.ts.map

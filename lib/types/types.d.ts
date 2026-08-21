@@ -18,7 +18,7 @@ export type ExperienceStatus = 'candidate' | 'live' | 'challenged' | 'superseded
 /** Positive = a path that works; negative = a confirmed dead end + reason. */
 export type ExperienceKind = 'positive' | 'negative';
 /** Where the experience came from: agent refinement or human injection. */
-export type ExperienceSource = 'agent' | 'human';
+export type ExperienceSource = 'agent' | 'human' | 'system';
 /** One ordered step of an experience path. */
 export interface ExperienceStep {
     /** 1-based position in the path. */
@@ -850,5 +850,61 @@ export interface MemoryExport {
     }[];
     /** The complete ledger. */
     ledger: LedgerBlock[];
+}
+/** Output form of a skill artifact. */
+export type SkillForm = 'skill_md' | 'script_mjs';
+/** Lifecycle status of a skill artifact. */
+export type SkillStatus = 'draft' | 'pending_review' | 'approved' | 'published' | 'rejected' | 'deprecated' | 'file_missing' | 'draft_lost' | 'revising' | 'file_drift';
+/** A skill artifact: a concrete executable derived from an experience. */
+export interface SkillArtifact {
+    /** Unique id. */
+    id: string;
+    /** The parent experience family_id this was derived from. */
+    parentExperienceId: string;
+    /** Output form. */
+    form: SkillForm;
+    /** Lifecycle status. */
+    status: SkillStatus;
+    /** Path to the draft file ($DSH_HOME/dsh-daoing-memory/skills/{id}.md|.mjs). */
+    draftPath?: string;
+    /** Path to the published file ($DSH_HOME/skills/{id}.md|.mjs). */
+    publishedPath?: string;
+    /** Version number (incremented on each revision). */
+    version: number;
+    /** Times this skill has been used since publication. */
+    useCount: number;
+    /** Times this skill has been optimized/revised. */
+    optimizeCount: number;
+    /** JSON-encoded recent usage feedback summary. */
+    lastFeedback?: string;
+    /** Hash of the file content for drift detection. */
+    contentHash?: string;
+    /** Epoch ms. */
+    createdAt: number;
+    /** Epoch ms. */
+    updatedAt: number;
+}
+/** Request to generate a skill draft from an experience. */
+export interface GenerateSkillDraftRequest {
+    /** Parent experience family_id. */
+    experienceId: string;
+    /** Desired output form. */
+    form: SkillForm;
+}
+/** Request to approve/reject a skill artifact. */
+export interface ReviewSkillRequest {
+    /** Skill artifact id. */
+    id: string;
+    /** Decision. */
+    decision: 'approve' | 'reject';
+    /** Required reason (audited). */
+    reason: string;
+}
+/** Request to publish (copy to $DSH_HOME/skills/) an approved skill. */
+export interface PublishSkillRequest {
+    /** Skill artifact id. */
+    id: string;
+    /** Required reason (audited). */
+    reason: string;
 }
 //# sourceMappingURL=types.d.ts.map

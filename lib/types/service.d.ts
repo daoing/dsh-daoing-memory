@@ -9,7 +9,7 @@ import type { Context } from '@deepseek-ai/cordis';
 import type { Agent } from '@deepseek-ai/dsh-agent';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import type { MemoryCore } from './core.ts';
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanConfirmFactRequest, HumanArchiveExperienceRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from './types.ts';
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, GenerateSkillDraftRequest, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanConfirmFactRequest, HumanArchiveExperienceRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, PublishSkillRequest, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviewSkillRequest, ReviseExperienceRequest, RollbackExperienceRequest, SkillArtifact, VerifyShadowRequest, VerifyShadowResult } from './types.ts';
 /**
  * Remote face of the memory library. All methods delegate to the core; the
  * core carries the 生·用·修·记 mechanism semantics.
@@ -151,5 +151,21 @@ export declare class MemoryService extends TypertRemoteService {
     humanDeleteConcern(agent: Agent, request: HumanDeleteConcernRequest): {
         deleted: true;
     };
+    /** Generate a skill draft from an experience using LLM. */
+    generateSkillDraft(agent: Agent, request: GenerateSkillDraftRequest): Promise<SkillArtifact>;
+    /** Review (approve/reject) a skill artifact. */
+    reviewSkill(agent: Agent, request: ReviewSkillRequest): SkillArtifact;
+    /** Publish an approved skill (copy to $DSH_HOME/skills/). */
+    publishSkill(agent: Agent, request: PublishSkillRequest): SkillArtifact;
+    /** List skill artifacts. */
+    listSkillArtifacts(agent: Agent, parentExperienceId: string, status: string): SkillArtifact[];
+    /** Get a single skill artifact. */
+    getSkillArtifact(agent: Agent, id: string): SkillArtifact | null;
+    /** Check if an experience is a skill conversion candidate. */
+    isSkillCandidate(agent: Agent, experienceId: string): boolean;
+    /**
+     * Generate skill content from an experience using LLM.
+     */
+    private generateSkillContentWithLlm;
 }
 //# sourceMappingURL=service.d.ts.map
