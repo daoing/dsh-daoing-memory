@@ -83,7 +83,7 @@ export function HumanOpsPage({ actions, onChanged }: HumanOpsPageProps): React.R
   const fail = (e: unknown): void => { setError(e instanceof Error ? e.message : String(e)); setNotice(null) }
 
   const submitExperience = async (): Promise<void> => {
-    const reason = promptReason('人工注入经验（固定格式）')
+    const reason = await promptReason('人工注入经验（固定格式）')
     if (reason === undefined) return
     if (gist.trim() === '' || family.trim() === '' || situation.trim() === '' || path.trim() === '' || reasoning.trim() === '') {
       setError('固定格式不完整：任务族、摘要、情境、路径、判断背景均为必填。')
@@ -121,7 +121,7 @@ export function HumanOpsPage({ actions, onChanged }: HumanOpsPageProps): React.R
       setError('负经验必须填写确认的失败原因。')
       return
     }
-    const reason = promptReason('人工摄取（固定格式 + 出处，产出候选待验证）')
+    const reason = await promptReason('人工摄取（固定格式 + 出处，产出候选待验证）')
     if (reason === undefined) return
     try {
       const result = await actions.ingest({
@@ -151,7 +151,7 @@ export function HumanOpsPage({ actions, onChanged }: HumanOpsPageProps): React.R
 
   const submitEdit = async (): Promise<void> => {
     if (editId.trim() === '') { setError('编辑需要先填写经验 id。'); return }
-    const reason = promptReason('人工编辑经验')
+    const reason = await promptReason('人工编辑经验')
     if (reason === undefined) return
     try {
       const snapshot = await actions.humanEditExperience({
@@ -168,7 +168,7 @@ export function HumanOpsPage({ actions, onChanged }: HumanOpsPageProps): React.R
   }
 
   const submitFact = async (): Promise<void> => {
-    const reason = promptReason('人工添加画像')
+    const reason = await promptReason('人工添加画像')
     if (reason === undefined) return
     if (factKey.trim() === '' || factValue.trim() === '') {
       setError('画像的键与值均为必填。')

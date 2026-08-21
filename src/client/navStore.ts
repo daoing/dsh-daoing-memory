@@ -1,6 +1,6 @@
 /**
- * Memory monitoring nav store: shared viewing state between the left-sidebar
- * footer entry (sidebar.footer.action) and the right-pane takeover (shell.overlay).
+ * Memory monitoring nav store: shared viewing state between the session header
+ * entry (conversation.session.header.utilities) and the right-pane takeover (shell.overlay).
  * One factory handle is created in apply and passed to both registrations so
  * selecting a menu in the sidebar and rendering the matching page read the
  * same state. Module level exports the factory only — a module-level handle

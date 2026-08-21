@@ -1,21 +1,21 @@
 /**
  * Memory workbench plugin, browser half: mounts the generated memory Remote
  * contribution, then registers two entries that share one nav store — a
- * sidebar.footer.action entry (foot of the left column, beside Settings) and
- * a shell.overlay takeover (the monitoring pages on the right). Selecting the
- * footer entry shows the matching page; opening a session returns to the
- * native conversation view.
+ * conversation.session.header.utilities entry (right of the session title,
+ * left of the Session log button) and a shell.overlay takeover (the monitoring
+ * pages on the right). Selecting the header entry shows the matching page;
+ * opening a session returns to the native conversation view.
  */
 
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the ui-layout SlotMap merge (the shell.overlay entry) and
-// the ui-sidebar SlotMap merge (the sidebar.footer.action entry).
+// the ui-conversation SlotMap merge (the conversation.session.header.utilities entry).
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
-import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { RemoteResult, TypertClientRemote } from '@deepseek-ai/dsh-typert-protocol'
 import memoryRemote from 'dsh-daoing-memory/remote'
 import type { MemoryRemoteActions } from './actions.ts'
-import { MemoryFooterAction } from './MemoryFooterAction.tsx'
+import { MemoryHeaderAction } from './MemoryHeaderAction.tsx'
 import { MemoryWorkbench } from './Workbench.tsx'
 import { createMemoryNavStore } from './navStore.ts'
 
@@ -35,7 +35,7 @@ function unwrap<T>(result: RemoteResult<T>): T {
 
 /**
  * Client plugin body: mount the memory Remote contribution, then register the
- * nav group and the overlay takeover sharing one nav store handle.
+ * header entry and the overlay takeover sharing one nav store handle.
  * @param ctx - client root context.
  * @returns disposer after both entries and the Remote namespace unregister.
  */
@@ -87,17 +87,18 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     ingest: async (session: SessionId, request) => unwrap(await memory.ingest(session, request)),
   }
 
-  // One nav store shared by both registrations: the footer entry writes the
+  // One nav store shared by both registrations: the header entry writes the
   // selection, the overlay reads it. Both slots belong to other packages
-  // (ui-sidebar / ui-layout), so register through slots.inject — it waits for
-  // the declaration and removes the contribution when it collapses.
+  // (ui-conversation / ui-layout), so register through slots.inject — it waits
+  // for the declaration and removes the contribution when it collapses.
+  // order: -10 places the memory button before the Session log button (order 0).
   const navStore = createMemoryNavStore()
-  const disposeNav = ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
-    name: 'sidebar.footer.action',
+  const disposeNav = ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
+    name: 'conversation.session.header.utilities',
     id: 'memory-nav',
-    order: 100,
+    order: -10,
     store: navStore,
-  }, MemoryFooterAction))
+  }, MemoryHeaderAction))
   const disposeOverlay = ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: 'memory-workbench',

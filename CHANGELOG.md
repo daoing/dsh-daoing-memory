@@ -2,6 +2,12 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.5] - 2026
+
+### Changed
+- **Memory entry moved to session header (right of title, left of Session log).** Replaced the sidebar footer button with a text capsule in `conversation.session.header.utilities` (same visual style as Session log, no icon). The button only appears when a session is active.
+- **Custom modal dialog replaces browser native prompt.** All audited operations (delete, rollback, pin, edit, etc.) now use a themed modal with textarea, Ctrl+Enter confirm, Esc cancel — no more ugly `window.prompt`. Also replaced the fact-value edit prompt with the same custom input dialog.
+
 ## [0.1.4] - 2026
 
 ### Changed

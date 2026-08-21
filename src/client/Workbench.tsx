@@ -1,9 +1,9 @@
 /**
  * Memory workbench takeover: covers the frame area to the right of the
  * sidebar while a monitoring page is selected. The entry point is the
- * sidebar.footer.action button (MemoryFooterAction); page switching lives
- * inside this panel as a tab bar so all four pages remain reachable without
- * relying on a sidebar nav group. Opening a session row clears the selection
+ * conversation.session.header.utilities button (MemoryHeaderAction, left of
+ * Session log); page switching lives inside this panel as a tab bar so all
+ * four pages remain reachable. Opening a session row clears the selection
  * and returns to the native conversation view. All human mutations go through
  * the audited Remote callbacks.
  */
@@ -19,6 +19,7 @@ import { ExperiencePage } from './ExperiencePage.tsx'
 import { FactDiaryPage } from './FactDiaryPage.tsx'
 import { LedgerPage } from './LedgerPage.tsx'
 import { HumanOpsPage } from './HumanOpsPage.tsx'
+import { ReasonDialogHost, showReasonDialog } from './ReasonDialog.tsx'
 import css from './Workbench.module.css'
 
 /** Full props of the overlay entry: session standard kit + the shared nav store + injected memory callbacks (session-first). */
@@ -32,16 +33,12 @@ export function formatTs(ts: number): string {
   return new Date(ts).toLocaleString('zh-CN', { hour12: false })
 }
 
-/** Confirmation prompt with an audited reason; resolves undefined when cancelled. */
-export function promptReason(action: string): string | undefined {
-  const reason = window.prompt(`「${action}」将写入审计账本。请填写原因（必填）：`)
-  if (reason === null) return undefined
-  const trimmed = reason.trim()
-  if (trimmed === '') {
-    window.alert('原因是必填项：人工操作必须可审计。')
-    return undefined
-  }
-  return trimmed
+/**
+ * Confirmation prompt with an audited reason; resolves undefined when cancelled.
+ * Uses the custom ReasonDialog instead of the browser's native window.prompt.
+ */
+export async function promptReason(action: string): Promise<string | undefined> {
+  return showReasonDialog(action)
 }
 
 /**
@@ -181,6 +178,7 @@ export function MemoryWorkbench(props: MemoryWorkbenchProps): React.ReactElement
         {nav.page === 'ledger' && <LedgerPage actions={bound} />}
         {nav.page === 'human' && <HumanOpsPage actions={bound} onChanged={refreshStats} />}
       </main>
+      <ReasonDialogHost />
     </div>
   )
 }

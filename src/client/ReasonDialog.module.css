@@ -1,0 +1,116 @@
+/* Reason dialog: modal overlay for audited human operations.
+   Tokens follow DSH's alias system so light/dark themes work automatically. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+.dialog {
+  width: 480px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-base);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--dsw-alias-label-caption);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-primary);
+  font-family: var(--dsw-font-family);
+  font-size: 13px;
+  line-height: 20px;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.textarea:focus {
+  border-color: var(--ds-color-accent, #4c8dff);
+  box-shadow: 0 0 0 2px rgba(76, 141, 255, 0.15);
+}
+
+.textarea::placeholder {
+  color: var(--dsw-alias-label-dimmed);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--dsw-alias-label-dimmed);
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btnCancel,
+.btnConfirm {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-family: var(--dsw-font-family);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--dsw-alias-border-l2);
+}
+
+.btnCancel {
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.btnCancel:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.btnConfirm {
+  background: var(--ds-color-accent, #4c8dff);
+  color: #fff;
+  border-color: transparent;
+}
+
+.btnConfirm:hover {
+  opacity: 0.9;
+}

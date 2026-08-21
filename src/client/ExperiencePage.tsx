@@ -87,7 +87,7 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
   }, [actions, expanded])
 
   const runPin = useCallback(async (item: ExperienceSnapshot): Promise<void> => {
-    const reason = promptReason(item.pinned ? '取消永久标记' : '永久标记（置顶信任，豁免预算）')
+    const reason = await promptReason(item.pinned ? '取消永久标记' : '永久标记（置顶信任，豁免预算）')
     if (reason === undefined) return
     await actions.humanPin({ id: item.id, pinned: !item.pinned, reason })
     refresh()
@@ -95,7 +95,7 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
   }, [actions, onChanged, refresh])
 
   const runPromote = useCallback(async (item: ExperienceSnapshot): Promise<void> => {
-    const reason = promptReason('人工转正（候选 → 生效，V2 人工权威）')
+    const reason = await promptReason('人工转正（候选 → 生效，V2 人工权威）')
     if (reason === undefined) return
     await actions.humanPromote(item.id, reason)
     refresh()
@@ -103,7 +103,7 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
   }, [actions, onChanged, refresh])
 
   const runReleaseCold = useCallback(async (item: ExperienceSnapshot): Promise<void> => {
-    const reason = promptReason('从冷宫放回候选（可再次被试探验证）')
+    const reason = await promptReason('从冷宫放回候选（可再次被试探验证）')
     if (reason === undefined) return
     await actions.humanReleaseCold({ id: item.id, reason })
     refresh()
@@ -111,7 +111,7 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
   }, [actions, onChanged, refresh])
 
   const runDelete = useCallback(async (item: ExperienceSnapshot): Promise<void> => {
-    const reason = promptReason(`删除经验「${item.gist.slice(0, 24)}」（指纹保留在账本）`)
+    const reason = await promptReason(`删除经验「${item.gist.slice(0, 24)}」（指纹保留在账本）`)
     if (reason === undefined) return
     await actions.humanDeleteExperience({ id: item.id, reason })
     refresh()
@@ -119,7 +119,7 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
   }, [actions, onChanged, refresh])
 
   const runRollback = useCallback(async (item: ExperienceSnapshot, toRevision: number): Promise<void> => {
-    const reason = promptReason(`回滚到 v${String(toRevision)}`)
+    const reason = await promptReason(`回滚到 v${String(toRevision)}`)
     if (reason === undefined) return
     await actions.humanRollback({ id: item.id, toRevision, reason })
     refresh()

@@ -1,0 +1,25 @@
+/* Memory header action: same capsule style as the Session log button,
+   minus the icon. Tokens mirror HeaderAction.module.css from
+   @deepseek-ai/dsh-session-log-export so the two buttons look like siblings. */
+
+.memoryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 18px;
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+  font-family: var(--dsw-font-family);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.memoryButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}

@@ -10,6 +10,7 @@ import { Fragment, useCallback, useEffect, useState } from 'react'
 import type { ConcernStatus, ConcernTree, DiaryEntry, FactEntry } from '../types.ts'
 import type { MemoryWorkbenchActions } from './actions.ts'
 import { formatTs, promptReason } from './Workbench.tsx'
+import { showInputDialog } from './ReasonDialog.tsx'
 import css from './Workbench.module.css'
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -131,7 +132,7 @@ export function FactDiaryPage({ actions, onChanged }: FactDiaryPageProps): React
 
   const runConfirm = useCallback(async (fact: FactEntry): Promise<void> => {
     const verb = fact.locked ? '解除人工确认' : '人工确认（锁定，禁止自动取代）'
-    const reason = promptReason(verb)
+    const reason = await promptReason(verb)
     if (reason === undefined) return
     await actions.humanConfirmFact({ factId: fact.id, locked: !fact.locked, reason })
     refresh()
@@ -139,9 +140,9 @@ export function FactDiaryPage({ actions, onChanged }: FactDiaryPageProps): React
   }, [actions, onChanged, refresh])
 
   const runEditFact = useCallback(async (fact: FactEntry): Promise<void> => {
-    const value = window.prompt(`编辑画像「${fact.category}/${fact.factKey}」的新值：`, fact.value)
-    if (value === null || value.trim() === '') return
-    const reason = promptReason('人工编辑画像')
+    const value = await showInputDialog(`编辑画像「${fact.category}/${fact.factKey}」的新值`, fact.value)
+    if (value === undefined || value.trim() === '') return
+    const reason = await promptReason('人工编辑画像')
     if (reason === undefined) return
     await actions.humanEditFact({ factId: fact.id, value: value.trim(), reason })
     refresh()
@@ -149,7 +150,7 @@ export function FactDiaryPage({ actions, onChanged }: FactDiaryPageProps): React
   }, [actions, onChanged, refresh])
 
   const runDeleteFact = useCallback(async (fact: FactEntry): Promise<void> => {
-    const reason = promptReason(`删除画像「${fact.category}/${fact.factKey}」（墓碑保留）`)
+    const reason = await promptReason(`删除画像「${fact.category}/${fact.factKey}」（墓碑保留）`)
     if (reason === undefined) return
     await actions.humanDeleteFact({ factId: fact.id, reason })
     refresh()
@@ -172,7 +173,7 @@ export function FactDiaryPage({ actions, onChanged }: FactDiaryPageProps): React
   }, [actions, openFactSources, factSources])
 
   const runSetConcernStatus = useCallback(async (tree: ConcernTree, status: ConcernStatus): Promise<void> => {
-    const reason = promptReason(`把关心事项「${tree.concern.title}」改为 ${CONCERN_STATUS_LABELS[status] ?? status}`)
+    const reason = await promptReason(`把关心事项「${tree.concern.title}」改为 ${CONCERN_STATUS_LABELS[status] ?? status}`)
     if (reason === undefined) return
     await actions.humanSetConcernStatus({ id: tree.concern.id, status, reason })
     refresh()
@@ -180,7 +181,7 @@ export function FactDiaryPage({ actions, onChanged }: FactDiaryPageProps): React
   }, [actions, onChanged, refresh])
 
   const runDeleteConcern = useCallback(async (tree: ConcernTree): Promise<void> => {
-    const reason = promptReason(`删除关心事项「${tree.concern.title}」及其更新（墓碑保留）`)
+    const reason = await promptReason(`删除关心事项「${tree.concern.title}」及其更新（墓碑保留）`)
     if (reason === undefined) return
     await actions.humanDeleteConcern({ id: tree.concern.id, reason })
     refresh()
