@@ -1,21 +1,21 @@
 /**
  * Memory workbench plugin, browser half: mounts the generated memory Remote
  * contribution, then registers two entries that share one nav store — a
- * sidebar.sections nav group (left column, between New Session and the
- * workspace browser) and a shell.overlay takeover (the monitoring pages on
- * the right). Selecting a menu in the nav group shows the matching page;
- * opening a session returns to the native conversation view.
+ * sidebar.footer.action entry (foot of the left column, beside Settings) and
+ * a shell.overlay takeover (the monitoring pages on the right). Selecting the
+ * footer entry shows the matching page; opening a session returns to the
+ * native conversation view.
  */
 
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the ui-layout SlotMap merge (the shell.overlay entry) and
-// the ui-sidebar SlotMap merge (the sidebar.sections entry).
+// the ui-sidebar SlotMap merge (the sidebar.footer.action entry).
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type { RemoteResult, TypertClientRemote } from '@deepseek-ai/dsh-typert-protocol'
 import memoryRemote from 'dsh-daoing-memory/remote'
 import type { MemoryRemoteActions } from './actions.ts'
-import { MemoryNavSection } from './MemoryNavSection.tsx'
+import { MemoryFooterAction } from './MemoryFooterAction.tsx'
 import { MemoryWorkbench } from './Workbench.tsx'
 import { createMemoryNavStore } from './navStore.ts'
 
@@ -87,17 +87,17 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     ingest: async (session: SessionId, request) => unwrap(await memory.ingest(session, request)),
   }
 
-  // One nav store shared by both registrations: the sidebar group writes the
+  // One nav store shared by both registrations: the footer entry writes the
   // selection, the overlay reads it. Both slots belong to other packages
   // (ui-sidebar / ui-layout), so register through slots.inject — it waits for
   // the declaration and removes the contribution when it collapses.
   const navStore = createMemoryNavStore()
-  const disposeNav = ctx.slots.inject('sidebar.sections', () => ctx.slots.register({
-    name: 'sidebar.sections',
+  const disposeNav = ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
+    name: 'sidebar.footer.action',
     id: 'memory-nav',
     order: 100,
     store: navStore,
-  }, MemoryNavSection))
+  }, MemoryFooterAction))
   const disposeOverlay = ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: 'memory-workbench',

@@ -1,0 +1,29 @@
+/* Memory workbench footer action: sits beside Settings at the sidebar foot.
+   Dimensions mirror the sidebar's own rows (36px height, 8px radius); colors
+   ride the shared alias tokens so light/dark themes follow the product. */
+
+.action {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.action:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.label {
+  font-size: 14px;
+  line-height: 20px;
+  white-space: nowrap;
+}

@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026
+
+### Fixed
+- **Browser workbench entry now works on current DSH releases (0.1.1-rc.x).** The previous release registered the sidebar navigation group into the `sidebar.sections` slot, which no longer exists in `@deepseek-ai/dsh-client-ui-sidebar` — the entry silently never rendered. The entry now registers into `sidebar.footer.action` (a **Memory** button at the foot of the left sidebar, beside Settings) and opens the same `shell.overlay` workbench. No host-side or schema changes.
+
 ## [0.1.0] - 2026
 
 First distributable release of the self-evolving memory plugin for DeepSeek Harness.

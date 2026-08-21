@@ -52,7 +52,7 @@ dsh plugin --profile web add github:daoing/dsh-daoing-memory
 node node_modules/dsh-daoing-memory/scripts/install-skill.mjs
 ```
 
-Then restart DSH. The memory tools become available to your agent, the profile snapshot starts being injected, and a **Memory** section appears in the web sidebar.
+Then restart DSH. The memory tools become available to your agent, the profile snapshot starts being injected, and a **Memory** button appears at the foot of the web left sidebar (beside Settings) — clicking it opens the **Memory** workbench.
 
 ## Usage
 

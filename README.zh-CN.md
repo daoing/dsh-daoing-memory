@@ -52,7 +52,7 @@ dsh plugin --profile web add github:daoing/dsh-daoing-memory
 node node_modules/dsh-daoing-memory/scripts/install-skill.mjs
 ```
 
-然后重启 DSH。记忆工具即对 agent 可用，画像快照开始注入，网页侧边栏出现 **Memory** 分区。
+然后重启 DSH。记忆工具即对 agent 可用，画像快照开始注入，网页左侧边栏底部（设置入口旁）出现**记忆监控**按钮，点击即打开 **Memory** 工作台。
 
 ## 使用
 
