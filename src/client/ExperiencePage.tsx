@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import type { ExperienceKind, ExperienceListFilter, ExperienceSnapshot, ExperienceStatus } from '../types.ts'
+import type { ExperienceKind, ExperienceListFilter, ExperienceSnapshot, ExperienceStatus, SkillArtifact, SkillForm } from '../types.ts'
 import { SYSTEM_EXPERIENCE_FAMILIES } from '../types.ts'
 import type { MemoryWorkbenchActions } from './actions.ts'
 import { formatTs, promptReason } from './Workbench.tsx'
@@ -18,6 +18,19 @@ const STATUS_LABELS: Record<string, string> = {
   superseded: '已取代',
   archived: '已归档',
   cold: '冷宫',
+}
+
+const SKILL_STATUS_LABELS: Record<string, string> = {
+  draft: '草稿',
+  pending_review: '待审',
+  approved: '已通过',
+  published: '已发布',
+  rejected: '已拒绝',
+  deprecated: '已废弃',
+  file_missing: '文件缺失',
+  draft_lost: '草稿丢失',
+  revising: '修订中',
+  file_drift: '文件漂移',
 }
 
 const KIND_LABELS: Record<string, string> = {
@@ -62,6 +75,11 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
   const [expanded, setExpanded] = useState<string | null>(null)
   const [history, setHistory] = useState<ExperienceSnapshot[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [skillArtifacts, setSkillArtifacts] = useState<SkillArtifact[]>([])
+
+  const refreshSkills = useCallback((experienceId: string): void => {
+    void actions.listSkillArtifacts(experienceId, '').then(setSkillArtifacts).catch(() => { setSkillArtifacts([]) })
+  }, [actions])
 
   const refresh = useCallback((): void => {
     const filter: ExperienceListFilter = {}
@@ -81,11 +99,13 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
     if (expanded === key) {
       setExpanded(null)
       setHistory([])
+      setSkillArtifacts([])
       return
     }
     setExpanded(key)
     void actions.family(item.id).then(setHistory).catch(() => { setHistory([]) })
-  }, [actions, expanded])
+    refreshSkills(item.id)
+  }, [actions, expanded, refreshSkills])
 
   const runPin = useCallback(async (item: ExperienceSnapshot): Promise<void> => {
     const reason = await promptReason(item.pinned ? '取消永久标记' : '永久标记（置顶信任，豁免预算）')
@@ -133,6 +153,43 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
     refresh()
     onChanged()
   }, [actions, onChanged, refresh])
+
+  const runGenerateSkill = useCallback(async (item: ExperienceSnapshot, form: SkillForm): Promise<void> => {
+    try {
+      await actions.generateSkillDraft({ experienceId: item.id, form })
+      refreshSkills(item.id)
+      onChanged()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+  }, [actions, onChanged, refreshSkills])
+
+  const runReviewSkill = useCallback(async (skillId: string, decision: 'approve' | 'reject'): Promise<void> => {
+    const reason = await promptReason(decision === 'approve' ? '通过 skill 草稿' : '拒绝 skill 草稿')
+    if (reason === undefined) return
+    try {
+      await actions.reviewSkill({ id: skillId, decision, reason })
+      // Refresh skills for the parent experience
+      const sa = skillArtifacts.find(s => s.id === skillId)
+      if (sa) refreshSkills(sa.parentExperienceId)
+      onChanged()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+  }, [actions, onChanged, refreshSkills, skillArtifacts])
+
+  const runPublishSkill = useCallback(async (skillId: string): Promise<void> => {
+    const reason = await promptReason('发布 skill 到 $DSH_HOME/skills/')
+    if (reason === undefined) return
+    try {
+      await actions.publishSkill({ id: skillId, reason })
+      const sa = skillArtifacts.find(s => s.id === skillId)
+      if (sa) refreshSkills(sa.parentExperienceId)
+      onChanged()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+  }, [actions, onChanged, refreshSkills, skillArtifacts])
 
   return (
     <div className={css.page}>
@@ -229,7 +286,38 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
                       <button type="button" className={css.btn} onClick={() => { void runReleaseCold(item) }}>放回候选</button>
                     )}
                     <button type="button" className={`${css.btn} ${css.btnDanger}`} onClick={() => { void runDelete(item) }}>删除</button>
+                    {(item.status === 'live' && item.path.length >= 3 && item.verifiedCount >= 2) && (
+                      <button type="button" className={css.btn} onClick={() => { void runGenerateSkill(item, 'skill_md') }} title="从经验生成 DSH skill 文档草稿">生成 Skill</button>
+                    )}
+                    {(item.status === 'live' && item.path.length >= 3 && item.verifiedCount >= 2) && (
+                      <button type="button" className={css.btn} onClick={() => { void runGenerateSkill(item, 'script_mjs') }} title="从经验生成可执行脚本草稿">生成脚本</button>
+                    )}
                   </div>
+                  {skillArtifacts.length > 0 && (
+                    <div className={css.historyTitle}>关联 Skill/脚本（{String(skillArtifacts.length)}）</div>
+                  )}
+                  {skillArtifacts.map(sa => (
+                    <div key={sa.id} className={css.cardDetail}>
+                      <div className={css.detailRow}>
+                        <span className={css.detailLabel}>{sa.form === 'skill_md' ? 'Skill' : '脚本'}</span>
+                        v{String(sa.version)} · {SKILL_STATUS_LABELS[sa.status] ?? sa.status} · 使用 {String(sa.useCount)} · 优化 {String(sa.optimizeCount)}
+                      </div>
+                      {sa.status === 'draft' && (
+                        <div className={css.actions}>
+                          <button type="button" className={css.btn} onClick={() => { void runReviewSkill(sa.id, 'approve') }}>通过</button>
+                          <button type="button" className={`${css.btn} ${css.btnDanger}`} onClick={() => { void runReviewSkill(sa.id, 'reject') }}>拒绝</button>
+                        </div>
+                      )}
+                      {sa.status === 'approved' && (
+                        <div className={css.actions}>
+                          <button type="button" className={css.btn} onClick={() => { void runPublishSkill(sa.id) }}>发布到 $DSH_HOME/skills/</button>
+                        </div>
+                      )}
+                      {sa.status === 'published' && sa.publishedPath !== undefined && (
+                        <div className={css.detailRow}><span className={css.detailLabel}>路径</span>{sa.publishedPath}</div>
+                      )}
+                    </div>
+                  ))}
                   <div className={css.historyTitle}>修订历史（superseded 为只读索引，可回滚）</div>
                   <table className={css.table}>
                     <thead>

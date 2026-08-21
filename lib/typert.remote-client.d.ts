@@ -4,7 +4,7 @@ import type {
   TypertRemoteContribution,
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractFactsRequest, ExtractFactsResult, ExtractionRecord, FactEntry, HumanAckDiaryRequest, HumanAddExperienceRequest, HumanAddFactRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from 'dsh-daoing-memory/types'
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractFactsRequest, ExtractFactsResult, ExtractionRecord, FactEntry, GenerateSkillDraftRequest, HumanAckDiaryRequest, HumanAddExperienceRequest, HumanAddFactRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, PublishSkillRequest, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviewSkillRequest, ReviseExperienceRequest, RollbackExperienceRequest, SkillArtifact, VerifyShadowRequest, VerifyShadowResult } from 'dsh-daoing-memory/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$6d656d6f7279 {
@@ -16,9 +16,11 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     extractionLog: (agentId: SessionId, limit: number, offset: number) => Promise<RemoteResult<ExtractionRecord[]>>
     extractionLogCount: (agentId: SessionId) => Promise<RemoteResult<number>>
     family: (agentId: SessionId, id: string) => Promise<RemoteResult<ExperienceSnapshot[]>>
+    generateSkillDraft: (agentId: SessionId, request: GenerateSkillDraftRequest) => Promise<RemoteResult<SkillArtifact>>
     get: (agentId: SessionId, id: string, revision?: number) => Promise<RemoteResult<ExperienceSnapshot | undefined>>
     getDeletionFeedback: (agentId: SessionId) => Promise<RemoteResult<ExperienceSnapshot | null>>
     getDiaryByIds: (agentId: SessionId, ids: string[]) => Promise<RemoteResult<DiaryEntry[]>>
+    getSkillArtifact: (agentId: SessionId, id: string) => Promise<RemoteResult<SkillArtifact | null>>
     humanAckDiary: (agentId: SessionId, request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     humanAddExperience: (agentId: SessionId, request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     humanAddFact: (agentId: SessionId, request: HumanAddFactRequest) => Promise<RemoteResult<FactEntry>>
@@ -35,6 +37,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     humanRollback: (agentId: SessionId, request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     humanSetConcernStatus: (agentId: SessionId, request: HumanSetConcernStatusRequest) => Promise<RemoteResult<{ ok: true; }>>
     ingest: (agentId: SessionId, request: IngestRequest) => Promise<RemoteResult<IngestResult>>
+    isSkillCandidate: (agentId: SessionId, experienceId: string) => Promise<RemoteResult<boolean>>
     ledgerQuery: (agentId: SessionId, request: LedgerQueryRequest) => Promise<RemoteResult<LedgerBlock[]>>
     ledgerQueryCount: (agentId: SessionId, request: LedgerQueryRequest) => Promise<RemoteResult<number>>
     list: (agentId: SessionId, filter: ExperienceListFilter) => Promise<RemoteResult<ExperienceSnapshot[]>>
@@ -43,9 +46,12 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     listDiary: (agentId: SessionId, limit: number, offset: number, onlyUnextracted: boolean) => Promise<RemoteResult<DiaryEntry[]>>
     listFacts: (agentId: SessionId, category: string, includeHistory: boolean, limit: number, offset: number) => Promise<RemoteResult<FactEntry[]>>
     listFactsCount: (agentId: SessionId, category: string, includeHistory: boolean) => Promise<RemoteResult<number>>
+    listSkillArtifacts: (agentId: SessionId, parentExperienceId: string, status: string) => Promise<RemoteResult<SkillArtifact[]>>
+    publishSkill: (agentId: SessionId, request: PublishSkillRequest) => Promise<RemoteResult<SkillArtifact>>
     recall: (agentId: SessionId, request: RecallExperiencesRequest) => Promise<RemoteResult<RecallExperiencesResult>>
     refine: (agentId: SessionId, request: RefineExperienceRequest) => Promise<RemoteResult<RefineExperienceResult>>
     report: (agentId: SessionId, request: ReportUseRequest) => Promise<RemoteResult<ReportUseResult>>
+    reviewSkill: (agentId: SessionId, request: ReviewSkillRequest) => Promise<RemoteResult<SkillArtifact>>
     revise: (agentId: SessionId, request: ReviseExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     rollback: (agentId: SessionId, request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     runDeletionFeedback: (agentId: SessionId) => Promise<RemoteResult<{ ran: boolean; summary?: string; }>>
@@ -63,9 +69,11 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'memory/extractionLog': (agentId: SessionId, limit: number, offset: number) => Promise<RemoteResult<ExtractionRecord[]>>
     'memory/extractionLogCount': (agentId: SessionId) => Promise<RemoteResult<number>>
     'memory/family': (agentId: SessionId, id: string) => Promise<RemoteResult<ExperienceSnapshot[]>>
+    'memory/generateSkillDraft': (agentId: SessionId, request: GenerateSkillDraftRequest) => Promise<RemoteResult<SkillArtifact>>
     'memory/get': (agentId: SessionId, id: string, revision?: number) => Promise<RemoteResult<ExperienceSnapshot | undefined>>
     'memory/getDeletionFeedback': (agentId: SessionId) => Promise<RemoteResult<ExperienceSnapshot | null>>
     'memory/getDiaryByIds': (agentId: SessionId, ids: string[]) => Promise<RemoteResult<DiaryEntry[]>>
+    'memory/getSkillArtifact': (agentId: SessionId, id: string) => Promise<RemoteResult<SkillArtifact | null>>
     'memory/humanAckDiary': (agentId: SessionId, request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     'memory/humanAddExperience': (agentId: SessionId, request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'memory/humanAddFact': (agentId: SessionId, request: HumanAddFactRequest) => Promise<RemoteResult<FactEntry>>
@@ -82,6 +90,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'memory/humanRollback': (agentId: SessionId, request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'memory/humanSetConcernStatus': (agentId: SessionId, request: HumanSetConcernStatusRequest) => Promise<RemoteResult<{ ok: true; }>>
     'memory/ingest': (agentId: SessionId, request: IngestRequest) => Promise<RemoteResult<IngestResult>>
+    'memory/isSkillCandidate': (agentId: SessionId, experienceId: string) => Promise<RemoteResult<boolean>>
     'memory/ledgerQuery': (agentId: SessionId, request: LedgerQueryRequest) => Promise<RemoteResult<LedgerBlock[]>>
     'memory/ledgerQueryCount': (agentId: SessionId, request: LedgerQueryRequest) => Promise<RemoteResult<number>>
     'memory/list': (agentId: SessionId, filter: ExperienceListFilter) => Promise<RemoteResult<ExperienceSnapshot[]>>
@@ -90,9 +99,12 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'memory/listDiary': (agentId: SessionId, limit: number, offset: number, onlyUnextracted: boolean) => Promise<RemoteResult<DiaryEntry[]>>
     'memory/listFacts': (agentId: SessionId, category: string, includeHistory: boolean, limit: number, offset: number) => Promise<RemoteResult<FactEntry[]>>
     'memory/listFactsCount': (agentId: SessionId, category: string, includeHistory: boolean) => Promise<RemoteResult<number>>
+    'memory/listSkillArtifacts': (agentId: SessionId, parentExperienceId: string, status: string) => Promise<RemoteResult<SkillArtifact[]>>
+    'memory/publishSkill': (agentId: SessionId, request: PublishSkillRequest) => Promise<RemoteResult<SkillArtifact>>
     'memory/recall': (agentId: SessionId, request: RecallExperiencesRequest) => Promise<RemoteResult<RecallExperiencesResult>>
     'memory/refine': (agentId: SessionId, request: RefineExperienceRequest) => Promise<RemoteResult<RefineExperienceResult>>
     'memory/report': (agentId: SessionId, request: ReportUseRequest) => Promise<RemoteResult<ReportUseResult>>
+    'memory/reviewSkill': (agentId: SessionId, request: ReviewSkillRequest) => Promise<RemoteResult<SkillArtifact>>
     'memory/revise': (agentId: SessionId, request: ReviseExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'memory/rollback': (agentId: SessionId, request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'memory/runDeletionFeedback': (agentId: SessionId) => Promise<RemoteResult<{ ran: boolean; summary?: string; }>>
@@ -113,9 +125,11 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'agent:memory/extractionLog': (limit: number, offset: number) => Promise<RemoteResult<ExtractionRecord[]>>
     'agent:memory/extractionLogCount': () => Promise<RemoteResult<number>>
     'agent:memory/family': (id: string) => Promise<RemoteResult<ExperienceSnapshot[]>>
+    'agent:memory/generateSkillDraft': (request: GenerateSkillDraftRequest) => Promise<RemoteResult<SkillArtifact>>
     'agent:memory/get': (id: string, revision?: number) => Promise<RemoteResult<ExperienceSnapshot | undefined>>
     'agent:memory/getDeletionFeedback': () => Promise<RemoteResult<ExperienceSnapshot | null>>
     'agent:memory/getDiaryByIds': (ids: string[]) => Promise<RemoteResult<DiaryEntry[]>>
+    'agent:memory/getSkillArtifact': (id: string) => Promise<RemoteResult<SkillArtifact | null>>
     'agent:memory/humanAckDiary': (request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     'agent:memory/humanAddExperience': (request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'agent:memory/humanAddFact': (request: HumanAddFactRequest) => Promise<RemoteResult<FactEntry>>
@@ -132,6 +146,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'agent:memory/humanRollback': (request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'agent:memory/humanSetConcernStatus': (request: HumanSetConcernStatusRequest) => Promise<RemoteResult<{ ok: true; }>>
     'agent:memory/ingest': (request: IngestRequest) => Promise<RemoteResult<IngestResult>>
+    'agent:memory/isSkillCandidate': (experienceId: string) => Promise<RemoteResult<boolean>>
     'agent:memory/ledgerQuery': (request: LedgerQueryRequest) => Promise<RemoteResult<LedgerBlock[]>>
     'agent:memory/ledgerQueryCount': (request: LedgerQueryRequest) => Promise<RemoteResult<number>>
     'agent:memory/list': (filter: ExperienceListFilter) => Promise<RemoteResult<ExperienceSnapshot[]>>
@@ -140,9 +155,12 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'agent:memory/listDiary': (limit: number, offset: number, onlyUnextracted: boolean) => Promise<RemoteResult<DiaryEntry[]>>
     'agent:memory/listFacts': (category: string, includeHistory: boolean, limit: number, offset: number) => Promise<RemoteResult<FactEntry[]>>
     'agent:memory/listFactsCount': (category: string, includeHistory: boolean) => Promise<RemoteResult<number>>
+    'agent:memory/listSkillArtifacts': (parentExperienceId: string, status: string) => Promise<RemoteResult<SkillArtifact[]>>
+    'agent:memory/publishSkill': (request: PublishSkillRequest) => Promise<RemoteResult<SkillArtifact>>
     'agent:memory/recall': (request: RecallExperiencesRequest) => Promise<RemoteResult<RecallExperiencesResult>>
     'agent:memory/refine': (request: RefineExperienceRequest) => Promise<RemoteResult<RefineExperienceResult>>
     'agent:memory/report': (request: ReportUseRequest) => Promise<RemoteResult<ReportUseResult>>
+    'agent:memory/reviewSkill': (request: ReviewSkillRequest) => Promise<RemoteResult<SkillArtifact>>
     'agent:memory/revise': (request: ReviseExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'agent:memory/rollback': (request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'agent:memory/runDeletionFeedback': () => Promise<RemoteResult<{ ran: boolean; summary?: string; }>>

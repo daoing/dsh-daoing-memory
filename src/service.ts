@@ -10,6 +10,9 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import type { MemoryCore } from './core.ts'
 import type {
   ConcernTree,
@@ -24,6 +27,7 @@ import type {
   ExtractFactsRequest,
   ExtractFactsResult,
   FactEntry,
+  GenerateSkillDraftRequest,
   HumanAddExperienceRequest,
   HumanAddFactRequest,
   HumanAckDiaryRequest,
@@ -45,14 +49,19 @@ import type {
   MemoryExport,
   MemoryStats,
   MemoryWorkbenchInfo,
+  PublishSkillRequest,
   RecallExperiencesRequest,
   RecallExperiencesResult,
   RefineExperienceRequest,
   RefineExperienceResult,
   ReportUseRequest,
   ReportUseResult,
+  ReviewSkillRequest,
   ReviseExperienceRequest,
   RollbackExperienceRequest,
+  SkillArtifact,
+  SkillForm,
+  SkillStatus,
   VerifyShadowRequest,
   VerifyShadowResult,
 } from './types.ts'
@@ -497,5 +506,141 @@ ${deletionList}
     void agent
     this.core.humanDeleteConcern(request, 'human')
     return { deleted: true }
+  }
+
+  // ── skill artifacts (P2) ──────────────────────────────────────────────────
+
+  /** Generate a skill draft from an experience using LLM. */
+  @Remote('generateSkillDraft')
+  async generateSkillDraft(agent: Agent, request: GenerateSkillDraftRequest): Promise<SkillArtifact> {
+    const experience = this.core['store'].getActiveRevision(request.experienceId)
+    if (experience === undefined) throw new Error(`memory: experience not found: ${request.experienceId}`)
+
+    const content = await this.generateSkillContentWithLlm(agent, experience, request.form)
+    if (content.length === 0) throw new Error('memory: LLM generated empty skill content')
+
+    // Save draft to filesystem
+    const home = process.env.DSH_HOME ?? join(process.cwd(), '.dsh')
+    const draftDir = join(home, 'dsh-daoing-memory', 'skills')
+    mkdirSync(draftDir, { recursive: true })
+    const ext = request.form === 'skill_md' ? '.md' : '.mjs'
+    const draftPath = join(draftDir, `${randomUUID()}${ext}`)
+    writeFileSync(draftPath, content, 'utf8')
+
+    return this.core.createSkillDraft(request.experienceId, request.form, content, draftPath, actorOf(agent))
+  }
+
+  /** Review (approve/reject) a skill artifact. */
+  @Remote('reviewSkill')
+  reviewSkill(agent: Agent, request: ReviewSkillRequest): SkillArtifact {
+    return this.core.reviewSkill(request, actorOf(agent))
+  }
+
+  /** Publish an approved skill (copy to $DSH_HOME/skills/). */
+  @Remote('publishSkill')
+  publishSkill(agent: Agent, request: PublishSkillRequest): SkillArtifact {
+    const artifact = this.core.getSkillArtifact(request.id)
+    if (artifact === undefined) throw new Error(`memory: skill artifact not found: ${request.id}`)
+    if (artifact.draftPath === undefined) throw new Error('memory: skill artifact has no draft path')
+
+    const home = process.env.DSH_HOME ?? join(process.cwd(), '.dsh')
+    const publishDir = join(home, 'skills')
+    mkdirSync(publishDir, { recursive: true })
+    const ext = artifact.form === 'skill_md' ? '.md' : '.mjs'
+    const publishedPath = join(publishDir, `${artifact.id}${ext}`)
+
+    // Copy draft to published location
+    const draftContent = readFileSync(artifact.draftPath, 'utf8')
+    writeFileSync(publishedPath, draftContent, 'utf8')
+
+    return this.core.publishSkill(request, publishedPath, actorOf(agent))
+  }
+
+  /** List skill artifacts. */
+  @Remote('listSkillArtifacts')
+  listSkillArtifacts(agent: Agent, parentExperienceId: string, status: string): SkillArtifact[] {
+    void agent
+    const filter: { parentExperienceId?: string; status?: SkillStatus } = {}
+    if (parentExperienceId !== '') filter.parentExperienceId = parentExperienceId
+    if (status !== '') filter.status = status as SkillStatus
+    return this.core.listSkillArtifacts(filter)
+  }
+
+  /** Get a single skill artifact. */
+  @Remote('getSkillArtifact')
+  getSkillArtifact(agent: Agent, id: string): SkillArtifact | null {
+    void agent
+    return this.core.getSkillArtifact(id) ?? null
+  }
+
+  /** Check if an experience is a skill conversion candidate. */
+  @Remote('isSkillCandidate')
+  isSkillCandidate(agent: Agent, experienceId: string): boolean {
+    void agent
+    return this.core.isSkillCandidate(experienceId)
+  }
+
+  /**
+   * Generate skill content from an experience using LLM.
+   */
+  private async generateSkillContentWithLlm(
+    agent: Agent,
+    experience: ExperienceSnapshot,
+    form: SkillForm,
+  ): Promise<string> {
+    const header = agent.session.requestHeader()?.config
+    if (header === undefined) return ''
+    const provider = header.provider
+    const model = header.model
+    if (provider === undefined || model === undefined) return ''
+
+    const isScript = form === 'script_mjs'
+    const systemPrompt = isScript
+      ? `你是一个技能脚本生成器。根据给定的经验（gist、路径步骤、判断背景、限制条件），生成一个可直接执行的 Node.js (.mjs) 脚本。
+
+要求：
+1. 脚本必须自包含，不依赖外部包（只用 Node.js 内置模块）
+2. 脚本顶部用注释说明用途和使用方法
+3. 脚本要有错误处理
+4. 脚本要跨平台兼容（Windows/macOS/Linux）
+5. 只输出脚本代码，不要其他解释`
+      : `你是一个 DSH skill 文档生成器。根据给定的经验（gist、路径步骤、判断背景、限制条件），生成一个 DSH skill 格式的 Markdown 文档。
+
+要求：
+1. 使用 DSH skill 标准格式（标题、描述、触发条件、步骤）
+2. 步骤要具体可操作
+3. 包含适用场景和不适用场景
+4. 只输出 Markdown 内容，不要其他解释`
+
+    const userPrompt = `经验摘要：${experience.gist}
+
+路径步骤：
+${experience.path.map((s, i) => `${i + 1}. ${s.action}`).join('\n')}
+
+判断背景：${experience.reasoning}
+
+限制条件：
+${experience.limits.map(l => `- ${l}`).join('\n')}
+
+请生成${isScript ? '可执行脚本' : 'skill 文档'}。`
+
+    const messages = [createUserMessage({
+      content: [{ type: 'text', text: userPrompt }],
+      source: { kind: 'plugin', plugin: 'dsh-daoing-memory' },
+    })]
+
+    let text = ''
+    for await (const chunk of this.ctx.llm.stream({
+      provider,
+      model,
+      messages,
+      system: systemPrompt,
+      maxTokens: 4000,
+      sessionId: agent.session.id,
+    })) {
+      if (chunk.type === 'text-delta') text += chunk.text
+    }
+
+    return text.trim()
   }
 }

@@ -20,10 +20,13 @@ import type {
   ExtractionRecord,
   FactEntry,
   LedgerBlock,
+  SkillArtifact,
+  SkillForm,
+  SkillStatus,
 } from './types.ts'
 
 /** Monotone store schema version. v1→v2 is an additive ALTER migration (see open()). */
-export const MEMORY_SCHEMA_VERSION = 5
+export const MEMORY_SCHEMA_VERSION = 6
 
 /** Half-life (ms) of the recency weighting applied to verification samples. */
 export const TRUST_HALF_LIFE_MS = 180 * 24 * 60 * 60 * 1000
@@ -335,6 +338,29 @@ export class MemoryStore {
         // v4 → v5 (010): concerns gain a background scene column.
         db.exec(`ALTER TABLE concerns ADD COLUMN background TEXT NOT NULL DEFAULT '';`)
         v = 5
+      }
+      if (v === 5 && MEMORY_SCHEMA_VERSION >= 6) {
+        // v5 → v6 (P2): skill_artifacts table for experience→skill conversion.
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS skill_artifacts (
+            id TEXT PRIMARY KEY,
+            parent_experience_id TEXT NOT NULL,
+            form TEXT NOT NULL,
+            status TEXT NOT NULL,
+            draft_path TEXT,
+            published_path TEXT,
+            version INTEGER NOT NULL DEFAULT 1,
+            use_count INTEGER NOT NULL DEFAULT 0,
+            optimize_count INTEGER NOT NULL DEFAULT 0,
+            last_feedback TEXT,
+            content_hash TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+          );
+          CREATE INDEX IF NOT EXISTS idx_skill_parent ON skill_artifacts (parent_experience_id);
+          CREATE INDEX IF NOT EXISTS idx_skill_status ON skill_artifacts (status);
+        `)
+        v = 6
       }
       if (v !== MEMORY_SCHEMA_VERSION) {
         throw new Error(`memory store schema version ${row.value} does not match ${MEMORY_SCHEMA_VERSION}; refusing to open`)
@@ -1080,4 +1106,87 @@ export class MemoryStore {
     if (row.superseded_by !== null) fact.supersededBy = row.superseded_by
     return fact
   }
+
+  // ── skill artifacts (P2) ──────────────────────────────────────────────────
+
+  /** Insert or update a skill artifact. */
+  upsertSkillArtifact(artifact: SkillArtifact): void {
+    this.db.prepare(`
+      INSERT INTO skill_artifacts (id, parent_experience_id, form, status, draft_path, published_path,
+        version, use_count, optimize_count, last_feedback, content_hash, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET
+        status=excluded.status, draft_path=excluded.draft_path, published_path=excluded.published_path,
+        version=excluded.version, use_count=excluded.use_count, optimize_count=excluded.optimize_count,
+        last_feedback=excluded.last_feedback, content_hash=excluded.content_hash, updated_at=excluded.updated_at
+    `).run(
+      artifact.id, artifact.parentExperienceId, artifact.form, artifact.status,
+      artifact.draftPath ?? null, artifact.publishedPath ?? null,
+      artifact.version, artifact.useCount, artifact.optimizeCount,
+      artifact.lastFeedback ?? null, artifact.contentHash ?? null,
+      artifact.createdAt, artifact.updatedAt,
+    )
+  }
+
+  /** Get a skill artifact by id. */
+  getSkillArtifact(id: string): SkillArtifact | undefined {
+    const row = this.db.prepare('SELECT * FROM skill_artifacts WHERE id = ?').get(id) as SkillArtifactRow | undefined
+    return row ? this.rowToSkillArtifact(row) : undefined
+  }
+
+  /** List skill artifacts, optionally filtered by parent experience or status. */
+  listSkillArtifacts(filter?: { parentExperienceId?: string; status?: SkillStatus }): SkillArtifact[] {
+    const clauses: string[] = ['1 = 1']
+    const params: (string)[] = []
+    if (filter?.parentExperienceId !== undefined) { clauses.push('parent_experience_id = ?'); params.push(filter.parentExperienceId) }
+    if (filter?.status !== undefined) { clauses.push('status = ?'); params.push(filter.status) }
+    const rows = this.db.prepare(`SELECT * FROM skill_artifacts WHERE ${clauses.join(' AND ')} ORDER BY created_at DESC`).all(...params) as unknown as SkillArtifactRow[]
+    return rows.map(r => this.rowToSkillArtifact(r))
+  }
+
+  /** Count skill artifacts by status. */
+  countSkillArtifacts(status?: SkillStatus): number {
+    if (status === undefined) {
+      const row = this.db.prepare('SELECT COUNT(*) AS n FROM skill_artifacts').get() as { n: number }
+      return row.n
+    }
+    const row = this.db.prepare('SELECT COUNT(*) AS n FROM skill_artifacts WHERE status = ?').get(status) as { n: number }
+    return row.n
+  }
+
+  private rowToSkillArtifact(row: SkillArtifactRow): SkillArtifact {
+    const artifact: SkillArtifact = {
+      id: row.id,
+      parentExperienceId: row.parent_experience_id,
+      form: row.form as SkillForm,
+      status: row.status as SkillStatus,
+      version: row.version,
+      useCount: row.use_count,
+      optimizeCount: row.optimize_count,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }
+    if (row.draft_path !== null) artifact.draftPath = row.draft_path
+    if (row.published_path !== null) artifact.publishedPath = row.published_path
+    if (row.last_feedback !== null) artifact.lastFeedback = row.last_feedback
+    if (row.content_hash !== null) artifact.contentHash = row.content_hash
+    return artifact
+  }
+}
+
+/** Raw row shape for skill_artifacts table. */
+interface SkillArtifactRow {
+  id: string
+  parent_experience_id: string
+  form: string
+  status: string
+  draft_path: string | null
+  published_path: string | null
+  version: number
+  use_count: number
+  optimize_count: number
+  last_feedback: string | null
+  content_hash: string | null
+  created_at: number
+  updated_at: number
 }

@@ -86,6 +86,11 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     humanDeleteConcern: async (session: SessionId, request) => { unwrap(await memory.humanDeleteConcern(session, request)) },
     humanReleaseCold: async (session: SessionId, request) => unwrap(await memory.humanReleaseCold(session, request)),
     ingest: async (session: SessionId, request) => unwrap(await memory.ingest(session, request)),
+    generateSkillDraft: async (session: SessionId, request) => unwrap(await memory.generateSkillDraft(session, request)),
+    reviewSkill: async (session: SessionId, request) => unwrap(await memory.reviewSkill(session, request)),
+    publishSkill: async (session: SessionId, request) => unwrap(await memory.publishSkill(session, request)),
+    listSkillArtifacts: async (session: SessionId, parentExperienceId, status) => unwrap(await memory.listSkillArtifacts(session, parentExperienceId, status)),
+    isSkillCandidate: async (session: SessionId, experienceId) => unwrap(await memory.isSkillCandidate(session, experienceId)),
   }
 
   // Header entry: no DSH store (avoids scope conflict with the root-scoped

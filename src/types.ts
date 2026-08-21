@@ -922,3 +922,77 @@ export interface MemoryExport {
   /** The complete ledger. */
   ledger: LedgerBlock[]
 }
+
+// ── skill artifacts (P2: experience → skill conversion) ─────────────────────
+
+/** Output form of a skill artifact. */
+export type SkillForm = 'skill_md' | 'script_mjs'
+
+/** Lifecycle status of a skill artifact. */
+export type SkillStatus =
+  | 'draft'           // LLM-generated, not yet reviewed
+  | 'pending_review'  // submitted for human review
+  | 'approved'        // human approved, ready to publish
+  | 'published'       // copied to $DSH_HOME/skills/, active
+  | 'rejected'        // human rejected (reason recorded)
+  | 'deprecated'      // retired
+  | 'file_missing'    // published but file not found at published_path
+  | 'draft_lost'      // draft file not found at draft_path
+  | 'revising'        // LLM is generating a new version
+  | 'file_drift'      // published file content differs from recorded hash
+
+/** A skill artifact: a concrete executable derived from an experience. */
+export interface SkillArtifact {
+  /** Unique id. */
+  id: string
+  /** The parent experience family_id this was derived from. */
+  parentExperienceId: string
+  /** Output form. */
+  form: SkillForm
+  /** Lifecycle status. */
+  status: SkillStatus
+  /** Path to the draft file ($DSH_HOME/dsh-daoing-memory/skills/{id}.md|.mjs). */
+  draftPath?: string
+  /** Path to the published file ($DSH_HOME/skills/{id}.md|.mjs). */
+  publishedPath?: string
+  /** Version number (incremented on each revision). */
+  version: number
+  /** Times this skill has been used since publication. */
+  useCount: number
+  /** Times this skill has been optimized/revised. */
+  optimizeCount: number
+  /** JSON-encoded recent usage feedback summary. */
+  lastFeedback?: string
+  /** Hash of the file content for drift detection. */
+  contentHash?: string
+  /** Epoch ms. */
+  createdAt: number
+  /** Epoch ms. */
+  updatedAt: number
+}
+
+/** Request to generate a skill draft from an experience. */
+export interface GenerateSkillDraftRequest {
+  /** Parent experience family_id. */
+  experienceId: string
+  /** Desired output form. */
+  form: SkillForm
+}
+
+/** Request to approve/reject a skill artifact. */
+export interface ReviewSkillRequest {
+  /** Skill artifact id. */
+  id: string
+  /** Decision. */
+  decision: 'approve' | 'reject'
+  /** Required reason (audited). */
+  reason: string
+}
+
+/** Request to publish (copy to $DSH_HOME/skills/) an approved skill. */
+export interface PublishSkillRequest {
+  /** Skill artifact id. */
+  id: string
+  /** Required reason (audited). */
+  reason: string
+}

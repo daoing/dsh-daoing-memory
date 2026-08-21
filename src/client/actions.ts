@@ -42,7 +42,11 @@ import type {
   MemoryExport,
   MemoryStats,
   MemoryWorkbenchInfo,
+  GenerateSkillDraftRequest,
+  PublishSkillRequest,
+  ReviewSkillRequest,
   RollbackExperienceRequest,
+  SkillArtifact,
 } from '../types.ts'
 
 /** Callbacks the workbench pages call; each one lands in the audited ledger. */
@@ -115,6 +119,16 @@ export interface MemoryWorkbenchActions {
   humanReleaseCold: (request: HumanReleaseColdRequest) => Promise<ExperienceSnapshot>
   /** 摄取归一: submit extracted candidates with provenance (006 §1). */
   ingest: (request: IngestRequest) => Promise<IngestResult>
+  /** Generate a skill draft from an experience using LLM. */
+  generateSkillDraft: (request: GenerateSkillDraftRequest) => Promise<SkillArtifact>
+  /** Review (approve/reject) a skill artifact. */
+  reviewSkill: (request: ReviewSkillRequest) => Promise<SkillArtifact>
+  /** Publish an approved skill to $DSH_HOME/skills/. */
+  publishSkill: (request: PublishSkillRequest) => Promise<SkillArtifact>
+  /** List skill artifacts. */
+  listSkillArtifacts: (parentExperienceId: string, status: string) => Promise<SkillArtifact[]>
+  /** Check if an experience is a skill conversion candidate. */
+  isSkillCandidate: (experienceId: string) => Promise<boolean>
 }
 
 /** The slot-injected face: every callback carries the session id first. */
@@ -187,6 +201,16 @@ export interface MemoryRemoteActions {
   humanReleaseCold: (session: SessionId, request: HumanReleaseColdRequest) => Promise<ExperienceSnapshot>
   /** 摄取归一: submit extracted candidates with provenance (006 §1). */
   ingest: (session: SessionId, request: IngestRequest) => Promise<IngestResult>
+  /** Generate a skill draft from an experience using LLM. */
+  generateSkillDraft: (session: SessionId, request: GenerateSkillDraftRequest) => Promise<SkillArtifact>
+  /** Review (approve/reject) a skill artifact. */
+  reviewSkill: (session: SessionId, request: ReviewSkillRequest) => Promise<SkillArtifact>
+  /** Publish an approved skill to $DSH_HOME/skills/. */
+  publishSkill: (session: SessionId, request: PublishSkillRequest) => Promise<SkillArtifact>
+  /** List skill artifacts. */
+  listSkillArtifacts: (session: SessionId, parentExperienceId: string, status: string) => Promise<SkillArtifact[]>
+  /** Check if an experience is a skill conversion candidate. */
+  isSkillCandidate: (session: SessionId, experienceId: string) => Promise<boolean>
 }
 
 /** Curry the session id away so the pages keep calling the bound face. */
@@ -226,5 +250,10 @@ export function bindMemoryActions(remote: MemoryRemoteActions, session: SessionI
     humanDeleteConcern: (request) => remote.humanDeleteConcern(session, request),
     humanReleaseCold: (request) => remote.humanReleaseCold(session, request),
     ingest: (request) => remote.ingest(session, request),
+    generateSkillDraft: (request) => remote.generateSkillDraft(session, request),
+    reviewSkill: (request) => remote.reviewSkill(session, request),
+    publishSkill: (request) => remote.publishSkill(session, request),
+    listSkillArtifacts: (parentExperienceId, status) => remote.listSkillArtifacts(session, parentExperienceId, status),
+    isSkillCandidate: (experienceId) => remote.isSkillCandidate(session, experienceId),
   }
 }

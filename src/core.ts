@@ -69,8 +69,14 @@ import type {
   RollbackExperienceRequest,
   VerifyShadowRequest,
   VerifyShadowResult,
+  SkillArtifact,
+  SkillForm,
+  SkillStatus,
+  ReviewSkillRequest,
+  PublishSkillRequest,
 } from './types.ts'
 import { blockHash, estimateTokens, MemoryStore, tokenize } from './store.ts'
+import { createHash } from 'node:crypto'
 import { isSystemExperienceFamily } from './types.ts'
 
 /** Tunable mechanism parameters, all overridable from the plugin config. */
@@ -1185,6 +1191,127 @@ export class MemoryCore {
    */
   getDeletionFeedback(): ExperienceSnapshot | undefined {
     return this.store.findExperienceByFamily(MemoryCore.DELETION_FEEDBACK_FAMILY)
+  }
+
+  // ── skill artifacts (P2: experience → skill conversion) ───────────────────
+
+  /**
+   * Create a skill artifact draft from LLM-generated content.
+   * @param experienceId - parent experience family_id.
+   * @param form - output form (skill_md or script_mjs).
+   * @param content - the LLM-generated skill/script content.
+   * @param draftPath - file path where the draft is saved.
+   * @param actor - who triggered the generation.
+   * @returns the created skill artifact.
+   */
+  createSkillDraft(
+    experienceId: string,
+    form: SkillForm,
+    content: string,
+    draftPath: string,
+    actor: string,
+  ): SkillArtifact {
+    const experience = this.store.getActiveRevision(experienceId)
+    if (experience === undefined) throw new Error(`memory: experience not found: ${experienceId}`)
+    const now = Date.now()
+    const id = crypto.randomUUID()
+    const hash = createHash('sha256').update(content).digest('hex')
+    const artifact: SkillArtifact = {
+      id,
+      parentExperienceId: experienceId,
+      form,
+      status: 'draft',
+      draftPath,
+      version: 1,
+      useCount: 0,
+      optimizeCount: 0,
+      contentHash: hash,
+      createdAt: now,
+      updatedAt: now,
+    }
+    this.store.upsertSkillArtifact(artifact)
+    this.ledger('skill-draft', 'experience', experienceId, actor, {
+      skillId: id,
+      form,
+      gist: experience.gist.slice(0, 80),
+    }, `skill draft generated from experience`)
+    return artifact
+  }
+
+  /**
+   * Review a skill artifact: approve or reject.
+   */
+  reviewSkill(request: ReviewSkillRequest, actor: string): SkillArtifact {
+    const artifact = this.store.getSkillArtifact(request.id)
+    if (artifact === undefined) throw new Error(`memory: skill artifact not found: ${request.id}`)
+    if (artifact.status !== 'draft' && artifact.status !== 'pending_review' && artifact.status !== 'revising') {
+      throw new Error(`memory: skill artifact ${request.id} is in status "${artifact.status}", cannot review`)
+    }
+    const now = Date.now()
+    const updated: SkillArtifact = {
+      ...artifact,
+      status: request.decision === 'approve' ? 'approved' : 'rejected',
+      lastFeedback: JSON.stringify({ decision: request.decision, reason: request.reason, ts: now }),
+      updatedAt: now,
+    }
+    this.store.upsertSkillArtifact(updated)
+    this.ledger(request.decision === 'approve' ? 'skill-approve' : 'skill-reject', 'experience', artifact.parentExperienceId, actor, {
+      skillId: request.id,
+      form: artifact.form,
+      version: artifact.version,
+    }, request.reason)
+    return updated
+  }
+
+  /**
+   * Publish a skill artifact: copy draft to $DSH_HOME/skills/ and mark as published.
+   * The actual file copy is done by the service layer; this method updates the DB record.
+   */
+  publishSkill(request: PublishSkillRequest, publishedPath: string, actor: string): SkillArtifact {
+    const artifact = this.store.getSkillArtifact(request.id)
+    if (artifact === undefined) throw new Error(`memory: skill artifact not found: ${request.id}`)
+    if (artifact.status !== 'approved') {
+      throw new Error(`memory: skill artifact ${request.id} must be approved before publishing (current: ${artifact.status})`)
+    }
+    const now = Date.now()
+    const updated: SkillArtifact = {
+      ...artifact,
+      status: 'published',
+      publishedPath,
+      updatedAt: now,
+    }
+    this.store.upsertSkillArtifact(updated)
+    this.ledger('skill-publish', 'experience', artifact.parentExperienceId, actor, {
+      skillId: request.id,
+      form: artifact.form,
+      publishedPath,
+    }, request.reason)
+    return updated
+  }
+
+  /** List skill artifacts, optionally filtered. */
+  listSkillArtifacts(filter?: { parentExperienceId?: string; status?: SkillStatus }): SkillArtifact[] {
+    return this.store.listSkillArtifacts(filter)
+  }
+
+  /** Get a single skill artifact. */
+  getSkillArtifact(id: string): SkillArtifact | undefined {
+    return this.store.getSkillArtifact(id)
+  }
+
+  /**
+   * Check if an experience is a candidate for skill conversion.
+   * Criteria: live status, enough recall events, complex path (≥3 steps).
+   */
+  isSkillCandidate(experienceId: string): boolean {
+    const exp = this.store.getActiveRevision(experienceId)
+    if (exp === undefined || exp.status !== 'live') return false
+    if (exp.path.length < 3) return false // too simple
+    if (exp.verifiedCount < 2) return false // not enough verified uses
+    // Check if a skill already exists for this experience
+    const existing = this.store.listSkillArtifacts({ parentExperienceId: experienceId })
+    if (existing.some(a => a.status === 'published' || a.status === 'approved' || a.status === 'pending_review')) return false
+    return true
   }
 
   // ── human operations (all ledgered) ───────────────────────────────────────

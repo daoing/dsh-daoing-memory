@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.9] - 2026
+
+### Added
+- **Experience → Skill/Script conversion (P2).** New `skill_artifacts` table (schema v5→v6) stores skill drafts derived from experiences. Each artifact tracks form (skill_md/script_mjs), lifecycle status (draft→pending_review→approved→published), version, use_count, optimize_count, and content hash for drift detection. Core methods: `createSkillDraft`, `reviewSkill`, `publishSkill`, `isSkillCandidate`. Service layer: LLM-powered `generateSkillDraft` (uses agent's model route via ctx.llm.stream), `reviewSkill`, `publishSkill` (copies draft to $DSH_HOME/skills/), `listSkillArtifacts`, `isSkillCandidate`. Six new Remote methods. ExperiencePage UI: "生成 Skill" / "生成脚本" buttons on qualifying experiences (live, ≥3 path steps, ≥2 verified uses), inline skill artifact list with approve/reject/publish actions. Draft files saved to $DSH_HOME/dsh-daoing-memory/skills/, published files copied to $DSH_HOME/skills/.
+
 ## [0.1.8] - 2026
 
 ### Added
