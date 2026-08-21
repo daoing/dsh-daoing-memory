@@ -1,10 +1,10 @@
 /**
  * Memory workbench plugin, browser half: mounts the generated memory Remote
  * contribution, then registers two entries that share one nav store — a
- * sidebar.sections nav group (left column, between New Session and the
- * workspace browser) and a shell.overlay takeover (the monitoring pages on
- * the right). Selecting a menu in the nav group shows the matching page;
- * opening a session returns to the native conversation view.
+ * sidebar.footer.action entry (foot of the left column, beside Settings) and
+ * a shell.overlay takeover (the monitoring pages on the right). Selecting the
+ * footer entry shows the matching page; opening a session returns to the
+ * native conversation view.
  */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client';
 /**
