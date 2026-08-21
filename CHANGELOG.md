@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.3] - 2026
+
+### Fixed
+- **Remote namespace mismatch causing empty workbench data.** The bundled typert remote descriptor carried the original `@deepseek-ai/dsh-memory` package namespace instead of `dsh-daoing-memory`, so client-side Remote calls did not match the host service and returned empty statistics. Regenerated the descriptor with the correct namespace and rebuilt the client bundle.
+
 ## [0.1.2] - 2026
 
 ### Fixed
