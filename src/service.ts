@@ -80,10 +80,14 @@ export class MemoryService extends TypertRemoteService {
   /** @param ctx - host context. */
   /** @param core - the ctx-free memory core. */
   /** @param workbench - descriptor the browser half matches workspaces against. */
+  /** @param llm - the DSH LLM service handle, fetched at apply() time (fiber ACTIVE). */
+  /** @param defaultModel - the DSH default-model config handle, fetched at apply() time. */
   constructor(
     ctx: Context,
     private readonly core: MemoryCore,
     private readonly workbench: () => MemoryWorkbenchInfo,
+    private readonly llm: { stream(options: unknown): AsyncIterable<{ type: string; text?: string; index?: number }> } | undefined,
+    private readonly defaultModel: { get(): { provider: string; model: string } } | undefined,
   ) {
     super(ctx, 'memory')
   }
@@ -200,9 +204,8 @@ export class MemoryService extends TypertRemoteService {
     let provider = header?.provider
     let model = header?.model
     if (provider === undefined || model === undefined) {
-      const defaultModel = this.ctx.get('agentDefaultModel') as { get(): { provider: string; model: string } } | undefined
-      if (defaultModel !== undefined) {
-        const def = defaultModel.get()
+      if (this.defaultModel !== undefined) {
+        const def = this.defaultModel.get()
         provider = def.provider
         model = def.model
       }
@@ -242,7 +245,8 @@ ${deletionList}
       sessionId: agent.session.id,
     }
 
-    for await (const chunk of this.ctx.llm.stream(options)) {
+    if (this.llm === undefined) return ''
+    for await (const chunk of this.llm.stream(options)) {
       if (chunk.type === 'text-delta') text += chunk.text
     }
 
@@ -601,9 +605,8 @@ ${deletionList}
     let provider = header?.provider
     let model = header?.model
     if (provider === undefined || model === undefined) {
-      const defaultModel = this.ctx.get('agentDefaultModel') as { get(): { provider: string; model: string } } | undefined
-      if (defaultModel !== undefined) {
-        const def = defaultModel.get()
+      if (this.defaultModel !== undefined) {
+        const def = this.defaultModel.get()
         provider = def.provider
         model = def.model
       }
@@ -646,7 +649,8 @@ ${experience.limits.map(l => `- ${l}`).join('\n')}
     })]
 
     let text = ''
-    for await (const chunk of this.ctx.llm.stream({
+    if (this.llm === undefined) return ''
+    for await (const chunk of this.llm.stream({
       provider,
       model,
       messages,

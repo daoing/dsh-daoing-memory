@@ -17,10 +17,25 @@ import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendReq
 export declare class MemoryService extends TypertRemoteService {
     private readonly core;
     private readonly workbench;
+    private readonly llm;
+    private readonly defaultModel;
     /** @param ctx - host context. */
     /** @param core - the ctx-free memory core. */
     /** @param workbench - descriptor the browser half matches workspaces against. */
-    constructor(ctx: Context, core: MemoryCore, workbench: () => MemoryWorkbenchInfo);
+    /** @param llm - the DSH LLM service handle, fetched at apply() time (fiber ACTIVE). */
+    /** @param defaultModel - the DSH default-model config handle, fetched at apply() time. */
+    constructor(ctx: Context, core: MemoryCore, workbench: () => MemoryWorkbenchInfo, llm: {
+        stream(options: unknown): AsyncIterable<{
+            type: string;
+            text?: string;
+            index?: number;
+        }>;
+    } | undefined, defaultModel: {
+        get(): {
+            provider: string;
+            model: string;
+        };
+    } | undefined);
     /** 生: refine a completed trajectory into an experience candidate. */
     refine(agent: Agent, request: RefineExperienceRequest): RefineExperienceResult;
     /** 用: recall + adjudication + injection budget + negative channel. */
