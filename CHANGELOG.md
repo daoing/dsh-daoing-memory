@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.4] - 2026
+
+### Changed
+- **Automated build pipeline replaces manual typert patching.** Added `scripts/build.mjs` and `scripts/gen-typert.mjs` that run the full host+client build inside a DSH source checkout, auto-generating typert descriptors with the correct package namespace from `@Remote` decorators — no more manual copy-and-replace of namespace strings. Updated `package.json` files list to explicit paths (required by DSH's typert export validation). Registered the package in the DSH checkout's `tsconfig.host.json` project references so the typert generator discovers it.
+
 ## [0.1.3] - 2026
 
 ### Fixed
