@@ -27,6 +27,7 @@ import type {
   HumanAddFactRequest,
   HumanAckDiaryRequest,
   HumanConfirmFactRequest,
+  HumanArchiveExperienceRequest,
   HumanDeleteConcernRequest,
   HumanDeleteExperienceRequest,
   HumanDeleteFactRequest,
@@ -293,6 +294,14 @@ export class MemoryService extends TypertRemoteService {
     void agent
     this.core.humanDeleteExperience(request, 'human')
     return { deleted: true }
+  }
+
+  /** Human archive (move to archived status; preserves data, removes from recall). */
+  @Remote('humanArchiveExperience')
+  humanArchiveExperience(agent: Agent, request: HumanArchiveExperienceRequest): { archived: true } {
+    void agent
+    this.core.humanArchiveExperience(request, 'human')
+    return { archived: true }
   }
 
   /** Human edit of the active revision. */

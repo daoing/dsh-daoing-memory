@@ -20,7 +20,7 @@
  *
  * @module dsh-daoing-memory/core
  */
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from './types.ts';
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from './types.ts';
 import { MemoryStore } from './store.ts';
 /** Tunable mechanism parameters, all overridable from the plugin config. */
 export interface MemoryCoreConfig {
@@ -157,6 +157,13 @@ export declare class MemoryCore {
     humanPin(request: HumanPinRequest, actor: MemoryActor): ExperienceSnapshot;
     /** Human delete: tombstone the family; the ledger keeps the fingerprint. */
     humanDeleteExperience(request: HumanDeleteExperienceRequest, actor: MemoryActor): void;
+    /**
+     * Human archive: move an experience to archived status. Unlike delete, the
+     * data is preserved (recoverable via deep lookup) but removed from active
+     * recall. This is the only way to retire system-managed experiences
+     * (e.g. extraction-feedback).
+     */
+    humanArchiveExperience(request: HumanArchiveExperienceRequest, actor: MemoryActor): void;
     /** Human edit: rewrite fields of the active revision in place. */
     humanEditExperience(request: HumanEditExperienceRequest, actor: MemoryActor): ExperienceSnapshot;
     /** Human injection: fixed format, source=human, trust floor, directly live. */

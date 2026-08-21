@@ -25,6 +25,7 @@ import type {
   HumanAddFactRequest,
   HumanAckDiaryRequest,
   HumanConfirmFactRequest,
+  HumanArchiveExperienceRequest,
   HumanDeleteConcernRequest,
   HumanDeleteExperienceRequest,
   HumanDeleteFactRequest,
@@ -86,6 +87,8 @@ export interface MemoryWorkbenchActions {
   humanPin: (request: HumanPinRequest) => Promise<ExperienceSnapshot>
   /** Human delete (tombstone + ledger fingerprint). */
   humanDeleteExperience: (request: HumanDeleteExperienceRequest) => Promise<void>
+  /** Human archive (move to archived; preserves data, removes from recall). */
+  humanArchiveExperience: (request: HumanArchiveExperienceRequest) => Promise<void>
   /** Human edit of the active revision. */
   humanEditExperience: (request: HumanEditExperienceRequest) => Promise<ExperienceSnapshot>
   /** Human injection in the fixed experience format. */
@@ -156,6 +159,8 @@ export interface MemoryRemoteActions {
   humanPin: (session: SessionId, request: HumanPinRequest) => Promise<ExperienceSnapshot>
   /** Human delete (tombstone + ledger fingerprint). */
   humanDeleteExperience: (session: SessionId, request: HumanDeleteExperienceRequest) => Promise<void>
+  /** Human archive (move to archived; preserves data, removes from recall). */
+  humanArchiveExperience: (session: SessionId, request: HumanArchiveExperienceRequest) => Promise<void>
   /** Human edit of the active revision. */
   humanEditExperience: (session: SessionId, request: HumanEditExperienceRequest) => Promise<ExperienceSnapshot>
   /** Human injection in the fixed experience format. */
@@ -207,6 +212,7 @@ export function bindMemoryActions(remote: MemoryRemoteActions, session: SessionI
     exportLibrary: () => remote.exportLibrary(session),
     humanPin: (request) => remote.humanPin(session, request),
     humanDeleteExperience: (request) => remote.humanDeleteExperience(session, request),
+    humanArchiveExperience: (request) => remote.humanArchiveExperience(session, request),
     humanEditExperience: (request) => remote.humanEditExperience(session, request),
     humanAddExperience: (request) => remote.humanAddExperience(session, request),
     humanPromote: (id, reason) => remote.humanPromote(session, id, reason),

@@ -4,7 +4,7 @@ import type {
   TypertRemoteContribution,
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractFactsRequest, ExtractFactsResult, ExtractionRecord, FactEntry, HumanAckDiaryRequest, HumanAddExperienceRequest, HumanAddFactRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from 'dsh-daoing-memory/types'
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractFactsRequest, ExtractFactsResult, ExtractionRecord, FactEntry, HumanAckDiaryRequest, HumanAddExperienceRequest, HumanAddFactRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from 'dsh-daoing-memory/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$6d656d6f7279 {
@@ -21,6 +21,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     humanAckDiary: (agentId: SessionId, request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     humanAddExperience: (agentId: SessionId, request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     humanAddFact: (agentId: SessionId, request: HumanAddFactRequest) => Promise<RemoteResult<FactEntry>>
+    humanArchiveExperience: (agentId: SessionId, request: HumanArchiveExperienceRequest) => Promise<RemoteResult<{ archived: true; }>>
     humanConfirmFact: (agentId: SessionId, request: HumanConfirmFactRequest) => Promise<RemoteResult<FactEntry>>
     humanDeleteConcern: (agentId: SessionId, request: HumanDeleteConcernRequest) => Promise<RemoteResult<{ deleted: true; }>>
     humanDeleteExperience: (agentId: SessionId, request: HumanDeleteExperienceRequest) => Promise<RemoteResult<{ deleted: true; }>>
@@ -65,6 +66,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'memory/humanAckDiary': (agentId: SessionId, request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     'memory/humanAddExperience': (agentId: SessionId, request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'memory/humanAddFact': (agentId: SessionId, request: HumanAddFactRequest) => Promise<RemoteResult<FactEntry>>
+    'memory/humanArchiveExperience': (agentId: SessionId, request: HumanArchiveExperienceRequest) => Promise<RemoteResult<{ archived: true; }>>
     'memory/humanConfirmFact': (agentId: SessionId, request: HumanConfirmFactRequest) => Promise<RemoteResult<FactEntry>>
     'memory/humanDeleteConcern': (agentId: SessionId, request: HumanDeleteConcernRequest) => Promise<RemoteResult<{ deleted: true; }>>
     'memory/humanDeleteExperience': (agentId: SessionId, request: HumanDeleteExperienceRequest) => Promise<RemoteResult<{ deleted: true; }>>
@@ -112,6 +114,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'agent:memory/humanAckDiary': (request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     'agent:memory/humanAddExperience': (request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'agent:memory/humanAddFact': (request: HumanAddFactRequest) => Promise<RemoteResult<FactEntry>>
+    'agent:memory/humanArchiveExperience': (request: HumanArchiveExperienceRequest) => Promise<RemoteResult<{ archived: true; }>>
     'agent:memory/humanConfirmFact': (request: HumanConfirmFactRequest) => Promise<RemoteResult<FactEntry>>
     'agent:memory/humanDeleteConcern': (request: HumanDeleteConcernRequest) => Promise<RemoteResult<{ deleted: true; }>>
     'agent:memory/humanDeleteExperience': (request: HumanDeleteExperienceRequest) => Promise<RemoteResult<{ deleted: true; }>>

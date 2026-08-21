@@ -72,6 +72,7 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     exportLibrary: async (session: SessionId) => unwrap(await memory.exportLibrary(session)),
     humanPin: async (session: SessionId, request) => unwrap(await memory.humanPin(session, request)),
     humanDeleteExperience: async (session: SessionId, request) => { unwrap(await memory.humanDeleteExperience(session, request)) },
+    humanArchiveExperience: async (session: SessionId, request) => { unwrap(await memory.humanArchiveExperience(session, request)) },
     humanEditExperience: async (session: SessionId, request) => unwrap(await memory.humanEditExperience(session, request)),
     humanAddExperience: async (session: SessionId, request) => unwrap(await memory.humanAddExperience(session, request)),
     humanPromote: async (session: SessionId, id, reason) => unwrap(await memory.humanPromote(session, id, reason)),

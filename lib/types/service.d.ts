@@ -9,7 +9,7 @@ import type { Context } from '@deepseek-ai/cordis';
 import type { Agent } from '@deepseek-ai/dsh-agent';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import type { MemoryCore } from './core.ts';
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from './types.ts';
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanConfirmFactRequest, HumanArchiveExperienceRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult } from './types.ts';
 /**
  * Remote face of the memory library. All methods delegate to the core; the
  * core carries the 生·用·修·记 mechanism semantics.
@@ -95,6 +95,10 @@ export declare class MemoryService extends TypertRemoteService {
     /** Human delete (tombstone + ledger fingerprint). */
     humanDeleteExperience(agent: Agent, request: HumanDeleteExperienceRequest): {
         deleted: true;
+    };
+    /** Human archive (move to archived status; preserves data, removes from recall). */
+    humanArchiveExperience(agent: Agent, request: HumanArchiveExperienceRequest): {
+        archived: true;
     };
     /** Human edit of the active revision. */
     humanEditExperience(agent: Agent, request: HumanEditExperienceRequest): ExperienceSnapshot;

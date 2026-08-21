@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { ExperienceKind, ExperienceListFilter, ExperienceSnapshot, ExperienceStatus } from '../types.ts'
+import { SYSTEM_EXPERIENCE_FAMILIES } from '../types.ts'
 import type { MemoryWorkbenchActions } from './actions.ts'
 import { formatTs, promptReason } from './Workbench.tsx'
 import css from './Workbench.module.css'
@@ -111,9 +112,16 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
   }, [actions, onChanged, refresh])
 
   const runDelete = useCallback(async (item: ExperienceSnapshot): Promise<void> => {
-    const reason = await promptReason(`删除经验「${item.gist.slice(0, 24)}」（指纹保留在账本）`)
-    if (reason === undefined) return
-    await actions.humanDeleteExperience({ id: item.id, reason })
+    const isSystem = SYSTEM_EXPERIENCE_FAMILIES.has(item.family)
+    if (isSystem) {
+      const reason = await promptReason(`归档系统经验「${item.family}」（保留数据，移出活跃召回）`)
+      if (reason === undefined) return
+      await actions.humanArchiveExperience({ id: item.id, reason })
+    } else {
+      const reason = await promptReason(`删除经验「${item.gist.slice(0, 24)}」（指纹保留在账本）`)
+      if (reason === undefined) return
+      await actions.humanDeleteExperience({ id: item.id, reason })
+    }
     refresh()
     onChanged()
   }, [actions, onChanged, refresh])
@@ -176,6 +184,7 @@ export function ExperiencePage({ actions, onChanged }: ExperiencePageProps): Rea
                   {KIND_LABELS[item.kind] ?? item.kind}
                 </span>
                 <span className={css.cardTitle} title={item.gist}>{item.gist}</span>
+                {SYSTEM_EXPERIENCE_FAMILIES.has(item.family) && <span className={`${css.badge} ${css.badgeConflict}`} title="系统自动生成的经验，禁止删除，只能归档">系统·{item.family}</span>}
                 {item.pinned && <span className={`${css.badge} ${css.badgePinned}`}>永久</span>}
                 {item.globalFlag && <span className={`${css.badge} ${css.badgePinned}`} title="全局作用域：跨领域可召回">全局</span>}
                 {item.context !== '' && <span className={`${css.badge} ${css.badgePositive}`} title={`作用域：${item.context}`}>{item.context}</span>}

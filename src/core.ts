@@ -41,6 +41,7 @@ import type {
   HumanAddExperienceRequest,
   HumanAddFactRequest,
   HumanAckDiaryRequest,
+  HumanArchiveExperienceRequest,
   HumanConfirmFactRequest,
   HumanDeleteConcernRequest,
   HumanDeleteExperienceRequest,
@@ -70,6 +71,7 @@ import type {
   VerifyShadowResult,
 } from './types.ts'
 import { blockHash, estimateTokens, MemoryStore, tokenize } from './store.ts'
+import { isSystemExperienceFamily } from './types.ts'
 
 /** Tunable mechanism parameters, all overridable from the plugin config. */
 export interface MemoryCoreConfig {
@@ -1096,11 +1098,38 @@ export class MemoryCore {
     const familyRows = this.store.getFamily(request.id)
     if (familyRows.length === 0) throw new Error(`memory: experience not found: ${request.id}`)
     const head = familyRows[familyRows.length - 1]!
+    // System-managed families (e.g. extraction-feedback) cannot be deleted —
+    // only archived. Deletion would lose accumulated feedback; archiving
+    // preserves the ledger trail while removing it from active recall.
+    if (isSystemExperienceFamily(head.family)) {
+      throw new Error(
+        `memory: system experience "${head.family}" cannot be deleted (only archived). `
+        + 'Use the archive action to remove it from active recall while preserving the audit trail.',
+      )
+    }
     this.store.deleteFamily(request.id)
     this.ledger('delete', 'experience', request.id, actor, {
       gist: head.gist,
       family: head.family,
       revisions: familyRows.length,
+    }, request.reason)
+  }
+
+  /**
+   * Human archive: move an experience to archived status. Unlike delete, the
+   * data is preserved (recoverable via deep lookup) but removed from active
+   * recall. This is the only way to retire system-managed experiences
+   * (e.g. extraction-feedback).
+   */
+  humanArchiveExperience(request: HumanArchiveExperienceRequest, actor: MemoryActor): void {
+    const current = this.store.getActiveRevision(request.id)
+    if (current === undefined) throw new Error(`memory: experience not found: ${request.id}`)
+    if (current.status === 'archived') return // already archived, idempotent
+    this.store.upsertExperience({ ...current, status: 'archived', updatedAt: Date.now() })
+    this.ledger('archive', 'experience', request.id, actor, {
+      gist: current.gist,
+      family: current.family,
+      previousStatus: current.status,
     }, request.reason)
   }
 
