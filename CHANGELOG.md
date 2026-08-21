@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026
+
+### Fixed
+- **Restored full four-page navigation inside the workbench.** The 0.1.1 footer entry opened the overlay but only on the Experiences page, with no way to reach Fact Diary / Ledger / Human Ops. The workbench now carries its own tab bar (经验库监控 / 画像·日记 / 账本 / 人工管理) so all pages are reachable without relying on a sidebar nav group.
+
 ## [0.1.1] - 2026
 
 ### Fixed

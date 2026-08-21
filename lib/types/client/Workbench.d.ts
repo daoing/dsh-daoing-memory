@@ -1,9 +1,11 @@
 /**
  * Memory workbench takeover: covers the frame area to the right of the
- * sidebar while a monitoring page is selected in the left-sidebar memory nav
- * group. The header title follows the selected page; opening a session row
- * clears the selection and returns to the native conversation view. All human
- * mutations go through the audited Remote callbacks.
+ * sidebar while a monitoring page is selected. The entry point is the
+ * sidebar.footer.action button (MemoryFooterAction); page switching lives
+ * inside this panel as a tab bar so all four pages remain reachable without
+ * relying on a sidebar nav group. Opening a session row clears the selection
+ * and returns to the native conversation view. All human mutations go through
+ * the audited Remote callbacks.
  */
 import type { PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots';
 import type { MemoryRemoteActions } from './actions.ts';

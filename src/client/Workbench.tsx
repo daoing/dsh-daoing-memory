@@ -1,12 +1,15 @@
 /**
  * Memory workbench takeover: covers the frame area to the right of the
- * sidebar while a monitoring page is selected in the left-sidebar memory nav
- * group. The header title follows the selected page; opening a session row
- * clears the selection and returns to the native conversation view. All human
- * mutations go through the audited Remote callbacks.
+ * sidebar while a monitoring page is selected. The entry point is the
+ * sidebar.footer.action button (MemoryFooterAction); page switching lives
+ * inside this panel as a tab bar so all four pages remain reachable without
+ * relying on a sidebar nav group. Opening a session row clears the selection
+ * and returns to the native conversation view. All human mutations go through
+ * the audited Remote callbacks.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import clsx from 'clsx'
 import type { PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { MemoryWorkbenchInfo, MemoryStats } from '../types.ts'
 import type { MemoryRemoteActions, MemoryWorkbenchActions } from './actions.ts'
@@ -159,6 +162,19 @@ export function MemoryWorkbench(props: MemoryWorkbenchProps): React.ReactElement
             : `经验 ${String(stats.experiences.total)}（live ${String(stats.experiences.byStatus.live)} / 隔离 ${String(stats.experiences.byStatus.challenged)}）· 画像 ${String(stats.facts.current)} · 日记 ${String(stats.diary.total)}（待提取 ${String(stats.diary.unextracted)}）· 账本 ${String(stats.ledgerBlocks)} 块`}
         </div>
       </header>
+      <nav className={css.workbenchTabs} aria-label="记忆监控页面">
+        {MEMORY_NAV_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={clsx(css.workbenchTab, nav.page === item.key && css.workbenchTabActive)}
+            aria-current={nav.page === item.key ? 'page' : undefined}
+            onClick={() => { props.actions.select(item.key) }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
       <main className={css.body}>
         {nav.page === 'experience' && <ExperiencePage actions={bound} onChanged={refreshStats} />}
         {nav.page === 'fact' && <FactDiaryPage actions={bound} onChanged={refreshStats} />}
