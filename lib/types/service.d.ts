@@ -31,7 +31,7 @@ export declare class MemoryService extends TypertRemoteService {
             index?: number;
         }>;
     } | undefined, defaultModel: {
-        get(): {
+        currentSelection(): {
             provider: string;
             model: string;
         };

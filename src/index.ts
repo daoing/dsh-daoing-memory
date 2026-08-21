@@ -156,7 +156,7 @@ export function apply(ctx: Context, config: Config = {}): void {
   // ctx.llm in a Remote call context fails ("cannot get property llm without
   // inject"), so we capture a stable reference here instead.
   const llm = ctx.get('llm') as { stream(options: unknown): AsyncIterable<{ type: string; text?: string; index?: number }> } | undefined
-  const defaultModel = ctx.get('agentDefaultModel') as { get(): { provider: string; model: string } } | undefined
+  const defaultModel = ctx.get('agentDefaultModel') as { currentSelection(): { provider: string; model: string } } | undefined
   new MemoryService(ctx, core, workbenchInfo, llm, defaultModel)
 
   ctx.effect(() => () => {

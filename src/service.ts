@@ -87,7 +87,7 @@ export class MemoryService extends TypertRemoteService {
     private readonly core: MemoryCore,
     private readonly workbench: () => MemoryWorkbenchInfo,
     private readonly llm: { stream(options: unknown): AsyncIterable<{ type: string; text?: string; index?: number }> } | undefined,
-    private readonly defaultModel: { get(): { provider: string; model: string } } | undefined,
+    private readonly defaultModel: { currentSelection(): { provider: string; model: string } } | undefined,
   ) {
     super(ctx, 'memory')
   }
@@ -204,10 +204,10 @@ export class MemoryService extends TypertRemoteService {
     let provider = header?.provider
     let model = header?.model
     if (provider === undefined || model === undefined) {
-      if (this.defaultModel !== undefined) {
-        const def = this.defaultModel.get()
-        provider = def.provider
-        model = def.model
+      const sel = this.defaultModel?.currentSelection()
+      if (sel !== undefined) {
+        provider = sel.provider
+        model = sel.model
       }
     }
     if (provider === undefined || model === undefined) return ''
@@ -605,10 +605,10 @@ ${deletionList}
     let provider = header?.provider
     let model = header?.model
     if (provider === undefined || model === undefined) {
-      if (this.defaultModel !== undefined) {
-        const def = this.defaultModel.get()
-        provider = def.provider
-        model = def.model
+      const sel = this.defaultModel?.currentSelection()
+      if (sel !== undefined) {
+        provider = sel.provider
+        model = sel.model
       }
     }
     if (provider === undefined || model === undefined) return ''
