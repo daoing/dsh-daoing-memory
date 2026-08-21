@@ -106,15 +106,15 @@ After restarting DSH:
 
 1. **Tools** — in a session, the agent can call `memory_fact`, `memory_extract`, `memory_recall`, etc. Ask it to "append a memory diary note" and check it succeeds.
 2. **Profile injection** — the system prompt gains a compact memory/profile section once facts/concerns exist.
-3. **Workbench** — the web sidebar shows a **Memory** section (Fact Diary / Experiences / Ledger / Human Ops).
+3. **Workbench** — the web left sidebar shows a **Memory** button at its foot (beside Settings); clicking it opens the workbench (Fact Diary / Experiences / Ledger / Human Ops).
 4. **Database** — a `memory.db` appears under your DSH storage directory on first write.
 
-If the Memory section is missing, the plugin likely did not join the bundle stack — see Troubleshooting.
+If the Memory button is missing, the plugin likely did not join the bundle stack — see Troubleshooting.
 
 ## Troubleshooting
 
 - **`dsh plugin` says the package "declares no dsh.bundle"** — you installed something that is not this plugin (or a stale build). Ensure you are installing `dsh-daoing-memory` and that its `package.json` declares `dsh.bundle.patch`.
-- **Memory section missing after restart** — check the profile's bundle list includes `dsh-daoing-memory` (the CLI reconciles it on install). Restart DSH fully.
+- **Memory button missing after restart** — check the profile's bundle list includes `dsh-daoing-memory` (the CLI reconciles it on install). Restart DSH fully. (On DSH 0.1.1-rc.x the entry registers into `sidebar.footer.action`; on very old DSH releases the button may not appear.)
 - **Row conflict in a source checkout** — the install re-points the in-box `memory` rows (by design). See the note in Environment 2.
 - **A *different* git plugin asks for `allowBuilds`** — that plugin builds on install; add the key pnpm prints to the profile's `pnpm-workspace.yaml`. This package does not require it.
 - **Skill not picked up** — confirm `memory-extraction.md` landed in the directory DSH scans for skills (`$DSH_HOME/skills`) and restart.

@@ -106,15 +106,15 @@ dsh plugin --profile web remove dsh-daoing-memory
 
 1. **工具** —— 会话里 agent 能调用 `memory_fact`、`memory_extract`、`memory_recall` 等。让它“记一条日记”，看是否成功。
 2. **画像注入** —— 一旦有了事实/关心事项，系统提示词里会出现一段精简的记忆/画像。
-3. **工作台** —— 网页侧边栏出现 **Memory** 分区（事实日记 / 经验 / 账本 / 人工运维）。
+3. **工作台** —— 网页左侧边栏底部（设置入口旁）出现 **记忆监控** 按钮，点击打开工作台（事实日记 / 经验 / 账本 / 人工运维）。
 4. **数据库** —— 首次写入后，DSH 存储目录下出现 `memory.db`。
 
-若 Memory 分区缺失，多半是插件没进 bundle 栈——见“故障排查”。
+若记忆按钮缺失，多半是插件没进 bundle 栈——见“故障排查”。
 
 ## 故障排查
 
 - **`dsh plugin` 提示该包“未声明 dsh.bundle”** —— 你装的不对（或装到了陈旧构建）。确认装的是 `dsh-daoing-memory`，且其 `package.json` 声明了 `dsh.bundle.patch`。
-- **重启后没有 Memory 分区** —— 检查 profile 的 bundle 列表是否包含 `dsh-daoing-memory`（CLI 安装时会自动对齐）。完整重启 DSH。
+- **重启后没有记忆按钮** —— 检查 profile 的 bundle 列表是否包含 `dsh-daoing-memory`（CLI 安装时会自动对齐）。完整重启 DSH。（DSH 0.1.1-rc.x 上入口注册在 `sidebar.footer.action`；过旧的 DSH 版本可能不显示按钮。）
 - **源码检出里的行冲突** —— 安装会把内置 `memory` 行重新指向（这是设计使然）。见环境二的说明。
 - **别的 git 插件要求 `allowBuilds`** —— 那个插件在安装时构建；把 pnpm 打印的键加进 profile 的 `pnpm-workspace.yaml`。本包不需要。
 - **skill 没生效** —— 确认 `memory-extraction.md` 已落到 DSH 扫描的 skill 目录（`$DSH_HOME/skills`），然后重启。
