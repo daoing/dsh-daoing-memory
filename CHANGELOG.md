@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.8] - 2026
+
+### Added
+- **Deletion-feedback summarization (P1-2).** When enough experience deletions accumulate (default: ≥3 deletions and ≥24 hours since last run), the next `memory_extract` call lazily triggers an LLM summarization of deletion reasons. The summary is stored as an `extraction-feedback` experience (family=`extraction-feedback`, global, system-source) that guides future extractions to avoid repeating deleted memory types. The experience is auto-revised on each subsequent summarization run. Two new Remote methods: `runDeletionFeedback` (manual trigger) and `getDeletionFeedback` (read current feedback). The `extract` result now includes a `deletionFeedback` field with the current guidance text. Configurable via `deletionFeedbackIntervalHours` (default 24) and `deletionFeedbackMinDeletions` (default 3). Uses the agent's current model route for the LLM call via `ctx.llm.stream()`. `ExperienceSource` extended with `'system'`.
+
 ## [0.1.7] - 2026
 
 ### Added

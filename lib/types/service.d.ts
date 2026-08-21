@@ -44,7 +44,28 @@ export declare class MemoryService extends TypertRemoteService {
     /** 记: append one diary entry; signals the extraction duty when due. */
     appendDiary(agent: Agent, request: DiaryAppendRequest): DiaryAppendResult;
     /** 上升通道: apply extracted facts over the pending diary window. */
-    extract(agent: Agent, request: ExtractFactsRequest): ExtractFactsResult;
+    extract(agent: Agent, request: ExtractFactsRequest): Promise<ExtractFactsResult>;
+    /**
+     * Check if deletion-feedback summarization is due and run it if so.
+     * Uses the agent's current model route for the LLM call.
+     */
+    private maybeRunDeletionFeedbackSummarization;
+    /**
+     * Call the LLM to summarize deletion records into extraction feedback rules.
+     * Uses ctx.llm.stream() with the agent's current model route.
+     */
+    private summarizeDeletionsWithLlm;
+    /**
+     * Remote: manually trigger deletion-feedback summarization (for testing/debugging).
+     */
+    runDeletionFeedback(agent: Agent): Promise<{
+        ran: boolean;
+        summary?: string;
+    }>;
+    /**
+     * Remote: get the current deletion-feedback experience (for debugging).
+     */
+    getDeletionFeedback(agent: Agent): ExperienceSnapshot | null;
     /** Diary timeline for the workbench (007 §2: server-side pagination, newest first). */
     listDiary(agent: Agent, limit: number, offset: number, onlyUnextracted: boolean): DiaryEntry[];
     /** Several diary entries by id (008 Path A: fact→diary provenance). */

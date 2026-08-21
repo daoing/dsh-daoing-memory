@@ -64,6 +64,10 @@ export interface MemoryCoreConfig {
     consolidateEveryNew: number;
     /** Consolidation: minimum HOURS elapsed since the last consolidation (interval, not a fixed clock point) (008 §1). */
     consolidateIntervalHours: number;
+    /** Deletion-feedback summarization: minimum HOURS between LLM summarization runs. */
+    deletionFeedbackIntervalHours: number;
+    /** Deletion-feedback summarization: minimum new deletions since last run to trigger. */
+    deletionFeedbackMinDeletions: number;
 }
 /** The mechanism defaults (005 mapping documented in the README). */
 export declare const DEFAULT_CORE_CONFIG: MemoryCoreConfig;
@@ -153,6 +157,33 @@ export declare class MemoryCore {
      * — consolidation never hard-deletes). Every step is ledgered.
      */
     consolidate(request: ConsolidateRequest, actor: string): ConsolidateResult;
+    /** Family id for the auto-generated extraction-feedback experience. */
+    static readonly DELETION_FEEDBACK_FAMILY = "extraction-feedback";
+    /**
+     * Check whether a deletion-feedback summarization run is due.
+     * Conditions: enough new deletions since last run AND enough time elapsed.
+     * @returns { due, lastTs, newDeletions, hoursSince }
+     */
+    deletionFeedbackDue(): {
+        due: boolean;
+        lastTs: number;
+        newDeletions: number;
+        hoursSince: number;
+    };
+    /**
+     * Apply an LLM-generated deletion-feedback summary as an extraction-feedback
+     * experience. If one already exists, it is revised in place (new revision);
+     * otherwise a new candidate experience is created.
+     * @param summary - the LLM-generated summary text (gist + reasoning).
+     * @param actor - who triggered the summarization ('system').
+     * @returns the upserted experience snapshot.
+     */
+    applyDeletionFeedback(summary: string, actor: string): ExperienceSnapshot;
+    /**
+     * Get the current extraction-feedback experience (if any) for injection into
+     * the extraction prompt.
+     */
+    getDeletionFeedback(): ExperienceSnapshot | undefined;
     /** Human pin/unpin: pinned cards keep the trust floor and escape budgets. */
     humanPin(request: HumanPinRequest, actor: MemoryActor): ExperienceSnapshot;
     /** Human delete: tombstone the family; the ledger keeps the fingerprint. */

@@ -452,6 +452,8 @@ export interface ExtractFactsResult {
     }[];
     /** Concern nodes created/extended by this extraction (007 §2). */
     appliedConcerns: number;
+    /** Deletion-feedback guidance (if an extraction-feedback experience exists). The agent should reference this when forming future extraction proposals. */
+    deletionFeedback?: string;
 }
 /** Concern shape (open by design; the enum only guides the model). */
 /**

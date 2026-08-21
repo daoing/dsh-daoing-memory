@@ -8,6 +8,7 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type { MemoryCore } from './core.ts'
 import type {
@@ -149,8 +150,115 @@ export class MemoryService extends TypertRemoteService {
 
   /** 上升通道: apply extracted facts over the pending diary window. */
   @Remote('extract')
-  extract(agent: Agent, request: ExtractFactsRequest): ExtractFactsResult {
+  async extract(agent: Agent, request: ExtractFactsRequest): Promise<ExtractFactsResult> {
+    // P1-2: lazy-trigger deletion-feedback summarization before extraction.
+    // If enough deletions have accumulated and enough time has passed, run an
+    // LLM summarization to update the extraction-feedback experience. This
+    // ensures the feedback is fresh when the extraction prompt references it.
+    await this.maybeRunDeletionFeedbackSummarization(agent)
     return this.core.extract(request, actorOf(agent), 'manual')
+  }
+
+  /**
+   * Check if deletion-feedback summarization is due and run it if so.
+   * Uses the agent's current model route for the LLM call.
+   */
+  private async maybeRunDeletionFeedbackSummarization(agent: Agent): Promise<void> {
+    const check = this.core.deletionFeedbackDue()
+    if (!check.due) return
+    try {
+      const records = this.core['store'].getDeletionRecordsSince(check.lastTs, 50)
+      if (records.length === 0) return
+      const summary = await this.summarizeDeletionsWithLlm(agent, records)
+      if (summary.length > 0) {
+        this.core.applyDeletionFeedback(summary, 'system')
+      }
+    } catch {
+      // Summarization failure is non-fatal — extraction proceeds without updated feedback.
+    }
+  }
+
+  /**
+   * Call the LLM to summarize deletion records into extraction feedback rules.
+   * Uses ctx.llm.stream() with the agent's current model route.
+   */
+  private async summarizeDeletionsWithLlm(
+    agent: Agent,
+    records: Array<{ seq: number; ts: number; objectId: string; reason: string; gist: string }>,
+  ): Promise<string> {
+    const header = agent.session.requestHeader()?.config
+    if (header === undefined) return '' // no model route available
+    const provider = header.provider
+    const model = header.model
+    if (provider === undefined || model === undefined) return ''
+
+    const deletionList = records.map((r, i) =>
+      `${i + 1}. [${new Date(r.ts).toLocaleDateString('zh-CN')}] 删除的经验：「${r.gist.slice(0, 80)}」\n   原因：${r.reason || '（未填写）'}`,
+    ).join('\n\n')
+
+    const systemPrompt = `你是一个记忆系统的反馈分析器。你的任务是分析用户删除记忆时填写的原因，总结出"什么类型的记忆不值得提取"的规则。
+
+输出要求：
+1. 用简洁的中文列出 3-5 条规则
+2. 每条规则说明：什么类型的记忆应该避免提取，以及为什么
+3. 规则要具体可操作，不要泛泛而谈
+4. 如果删除原因都很相似，合并为更精炼的规则`
+
+    const userPrompt = `以下是近期被用户删除的记忆及其删除原因：
+
+${deletionList}
+
+请总结成提取反馈规则。`
+
+    const messages = [createUserMessage({
+      content: [{ type: 'text', text: userPrompt }],
+      source: { kind: 'plugin', plugin: 'dsh-daoing-memory' },
+    })]
+
+    let text = ''
+    const options = {
+      provider,
+      model,
+      messages,
+      system: systemPrompt,
+      maxTokens: 1500,
+      sessionId: agent.session.id,
+    }
+
+    for await (const chunk of this.ctx.llm.stream(options)) {
+      if (chunk.type === 'text-delta') text += chunk.text
+    }
+
+    return text.trim()
+  }
+
+  /**
+   * Remote: manually trigger deletion-feedback summarization (for testing/debugging).
+   */
+  @Remote('runDeletionFeedback')
+  async runDeletionFeedback(agent: Agent): Promise<{ ran: boolean; summary?: string }> {
+    const check = this.core.deletionFeedbackDue()
+    const records = this.core['store'].getDeletionRecordsSince(check.lastTs, 50)
+    if (records.length === 0) return { ran: false }
+    try {
+      const summary = await this.summarizeDeletionsWithLlm(agent, records)
+      if (summary.length > 0) {
+        this.core.applyDeletionFeedback(summary, 'system')
+        return { ran: true, summary }
+      }
+      return { ran: false }
+    } catch (e) {
+      return { ran: false, summary: String(e) }
+    }
+  }
+
+  /**
+   * Remote: get the current deletion-feedback experience (for debugging).
+   */
+  @Remote('getDeletionFeedback')
+  getDeletionFeedback(agent: Agent): ExperienceSnapshot | null {
+    void agent
+    return this.core.getDeletionFeedback() ?? null
   }
 
   /** Diary timeline for the workbench (007 §2: server-side pagination, newest first). */

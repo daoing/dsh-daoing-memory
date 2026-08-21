@@ -224,6 +224,22 @@ export declare class MemoryStore {
     lastConsolidationTs(): number;
     /** Non-deleted experiences created strictly after `ts` (new material since last consolidation). */
     countExperiencesSince(ts: number): number;
+    /** Last deletion-feedback summarization ts (0 = never). Stored in memory_meta. */
+    lastDeletionFeedbackTs(): number;
+    /** Record the timestamp of a deletion-feedback summarization run. */
+    setLastDeletionFeedbackTs(ts: number): void;
+    /** Count experience deletions (ledger op='delete', objectType='experience') since a given ts. */
+    countDeletionsSince(ts: number): number;
+    /** Get the deletion ledger blocks since a given ts (for LLM summarization input). */
+    getDeletionRecordsSince(ts: number, limit?: number): Array<{
+        seq: number;
+        ts: number;
+        objectId: string;
+        reason: string;
+        gist: string;
+    }>;
+    /** Find the active (non-deleted) experience by family name. Returns the latest revision. */
+    findExperienceByFamily(family: string): ExperienceSnapshot | undefined;
     /** Archive a set of experiences by family_id (leave recall; recoverable — never hard-deleted autonomously). */
     archiveExperienceIds(ids: string[], ts: number): void;
     /** Record one recall event. */

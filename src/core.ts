@@ -115,6 +115,10 @@ export interface MemoryCoreConfig {
   consolidateEveryNew: number
   /** Consolidation: minimum HOURS elapsed since the last consolidation (interval, not a fixed clock point) (008 §1). */
   consolidateIntervalHours: number
+  /** Deletion-feedback summarization: minimum HOURS between LLM summarization runs. */
+  deletionFeedbackIntervalHours: number
+  /** Deletion-feedback summarization: minimum new deletions since last run to trigger. */
+  deletionFeedbackMinDeletions: number
 }
 
 /** The mechanism defaults (005 mapping documented in the README). */
@@ -139,6 +143,8 @@ export const DEFAULT_CORE_CONFIG: MemoryCoreConfig = {
   candidateTrialFloorScore: 0.18,
   consolidateEveryNew: 6,
   consolidateIntervalHours: 24,
+  deletionFeedbackIntervalHours: 24,
+  deletionFeedbackMinDeletions: 3,
 }
 
 /** Objective-evidence markers overriding a claimed experience-attributed failure. */
@@ -766,6 +772,11 @@ export class MemoryCore {
   /** 上升通道: apply extracted facts over the pending diary window. */
   extract(request: ExtractFactsRequest, actor: MemoryActor, trigger: 'cadence' | 'manual' = 'manual'): ExtractFactsResult {
     const result: ExtractFactsResult = { applied: [], conflicts: [], rejected: [], appliedConcerns: 0 }
+    // Include deletion-feedback guidance if an extraction-feedback experience exists.
+    const feedback = this.getDeletionFeedback()
+    if (feedback !== undefined) {
+      result.deletionFeedback = feedback.reasoning
+    }
     const now = Date.now()
     const consumedDiary = new Set<string>()
 
@@ -1079,6 +1090,101 @@ export class MemoryCore {
       result.archived += sources.length
     }
     return result
+  }
+
+  // ── deletion-feedback summarization (P1-2) ────────────────────────────────
+
+  /** Family id for the auto-generated extraction-feedback experience. */
+  static readonly DELETION_FEEDBACK_FAMILY = 'extraction-feedback'
+
+  /**
+   * Check whether a deletion-feedback summarization run is due.
+   * Conditions: enough new deletions since last run AND enough time elapsed.
+   * @returns { due, lastTs, newDeletions, hoursSince }
+   */
+  deletionFeedbackDue(): { due: boolean; lastTs: number; newDeletions: number; hoursSince: number } {
+    const lastTs = this.store.lastDeletionFeedbackTs()
+    const hoursSince = lastTs === 0 ? Infinity : (Date.now() - lastTs) / (60 * 60 * 1000)
+    const newDeletions = this.store.countDeletionsSince(lastTs)
+    const enoughDeletions = newDeletions >= this.config.deletionFeedbackMinDeletions
+    const intervalPassed = hoursSince >= this.config.deletionFeedbackIntervalHours
+    return { due: enoughDeletions && intervalPassed, lastTs, newDeletions, hoursSince }
+  }
+
+  /**
+   * Apply an LLM-generated deletion-feedback summary as an extraction-feedback
+   * experience. If one already exists, it is revised in place (new revision);
+   * otherwise a new candidate experience is created.
+   * @param summary - the LLM-generated summary text (gist + reasoning).
+   * @param actor - who triggered the summarization ('system').
+   * @returns the upserted experience snapshot.
+   */
+  applyDeletionFeedback(summary: string, actor: string): ExperienceSnapshot {
+    const now = Date.now()
+    const existing = this.store.findExperienceByFamily(MemoryCore.DELETION_FEEDBACK_FAMILY)
+    if (existing !== undefined) {
+      // Revise in place: create a new revision with updated content
+      const next: ExperienceSnapshot = {
+        ...existing,
+        revision: existing.revision + 1,
+        gist: summary.slice(0, 200),
+        reasoning: summary,
+        status: 'live',
+        updatedAt: now,
+      }
+      this.store.upsertExperience(next)
+      this.ledger('revise', 'experience', next.id, actor, {
+        revision: next.revision,
+        previousRevision: existing.revision,
+      }, 'deletion-feedback summarization')
+      return next
+    }
+    // Create new extraction-feedback experience
+    const id = crypto.randomUUID()
+    const alpha = 5
+    const beta = 2
+    const exp: ExperienceSnapshot = {
+      id,
+      revision: 1,
+      kind: 'positive',
+      source: 'system',
+      family: MemoryCore.DELETION_FEEDBACK_FAMILY,
+      gist: summary.slice(0, 200),
+      situation: ['memory_extract 提炼新记忆时，参考此经验避免重复提取已被用户否定的类型'],
+      path: [{ order: 1, action: '读取此经验的 reasoning 字段，了解哪些类型的记忆曾被用户删除及原因' }, { order: 2, action: '提炼时避开这些类型，优先提取用户认可的记忆模式' }],
+      reasoning: summary,
+      limits: ['此经验由系统自动生成，禁止人工删除（只能归档）', '内容会随删除记录增多而定期更新'],
+      status: 'live',
+      alpha,
+      beta,
+      samples: alpha + beta,
+      trust: (alpha + 1) / (alpha + beta + 2),
+      weightedTrust: (alpha + 1) / (alpha + beta + 2),
+      pinned: false,
+      tokensSaved: 0,
+      tokensSpent: 0,
+      context: '',
+      globalFlag: true,
+      verifiedCount: 0,
+      rejectCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    }
+    this.store.upsertExperience(exp)
+    this.ledger('refine', 'experience', exp.id, actor, {
+      family: exp.family,
+      status: exp.status,
+    }, 'deletion-feedback summarization (initial)')
+    this.store.setLastDeletionFeedbackTs(now)
+    return exp
+  }
+
+  /**
+   * Get the current extraction-feedback experience (if any) for injection into
+   * the extraction prompt.
+   */
+  getDeletionFeedback(): ExperienceSnapshot | undefined {
+    return this.store.findExperienceByFamily(MemoryCore.DELETION_FEEDBACK_FAMILY)
   }
 
   // ── human operations (all ledgered) ───────────────────────────────────────

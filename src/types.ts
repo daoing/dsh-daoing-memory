@@ -29,7 +29,7 @@ export type ExperienceStatus = 'candidate' | 'live' | 'challenged' | 'superseded
 export type ExperienceKind = 'positive' | 'negative'
 
 /** Where the experience came from: agent refinement or human injection. */
-export type ExperienceSource = 'agent' | 'human'
+export type ExperienceSource = 'agent' | 'human' | 'system'
 
 /** One ordered step of an experience path. */
 export interface ExperienceStep {
@@ -497,6 +497,8 @@ export interface ExtractFactsResult {
   rejected: { proposal: FactProposal; reason: string }[]
   /** Concern nodes created/extended by this extraction (007 §2). */
   appliedConcerns: number
+  /** Deletion-feedback guidance (if an extraction-feedback experience exists). The agent should reference this when forming future extraction proposals. */
+  deletionFeedback?: string
 }
 
 // ── 关心事项（007 §2, evolving concerns with parent/child hierarchy) ────────

@@ -55,6 +55,10 @@ export interface Config {
     recallFloorScore?: number;
     /** Shadow replay agreement required to adopt a draft. */
     shadowPassRate?: number;
+    /** Minimum hours between deletion-feedback LLM summarization runs. */
+    deletionFeedbackIntervalHours?: number;
+    /** Minimum new deletions since last run to trigger summarization. */
+    deletionFeedbackMinDeletions?: number;
 }
 /** Resolve the plugin config with explicit defaults; unknown keys fail loud. */
 export declare function resolveConfig(config: Config): Required<Omit<Config, 'databasePath' | 'workspacePath'>> & {

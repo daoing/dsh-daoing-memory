@@ -65,6 +65,10 @@ export interface Config {
   recallFloorScore?: number
   /** Shadow replay agreement required to adopt a draft. */
   shadowPassRate?: number
+  /** Minimum hours between deletion-feedback LLM summarization runs. */
+  deletionFeedbackIntervalHours?: number
+  /** Minimum new deletions since last run to trigger summarization. */
+  deletionFeedbackMinDeletions?: number
 }
 
 /** Resolve the plugin config with explicit defaults; unknown keys fail loud. */
@@ -79,6 +83,7 @@ export function resolveConfig(config: Config): Required<Omit<Config, 'databasePa
     'challengeConsecutiveFails', 'challengeWindow', 'challengeWindowFailRate',
     'familyLiveCap', 'complexityTokenGate', 'complexityStepGate',
     'duplicateOverlapGate', 'recallFloorScore', 'shadowPassRate',
+    'deletionFeedbackIntervalHours', 'deletionFeedbackMinDeletions',
   ]
   const unknown = Object.keys(config).filter(key => !(known as readonly string[]).includes(key))
   if (unknown.length > 0) {
@@ -103,6 +108,8 @@ export function resolveConfig(config: Config): Required<Omit<Config, 'databasePa
     duplicateOverlapGate: config.duplicateOverlapGate ?? DEFAULT_CORE_CONFIG.duplicateOverlapGate,
     recallFloorScore: config.recallFloorScore ?? DEFAULT_CORE_CONFIG.recallFloorScore,
     shadowPassRate: config.shadowPassRate ?? DEFAULT_CORE_CONFIG.shadowPassRate,
+    deletionFeedbackIntervalHours: config.deletionFeedbackIntervalHours ?? DEFAULT_CORE_CONFIG.deletionFeedbackIntervalHours,
+    deletionFeedbackMinDeletions: config.deletionFeedbackMinDeletions ?? DEFAULT_CORE_CONFIG.deletionFeedbackMinDeletions,
   }
 }
 
@@ -129,6 +136,8 @@ export function apply(ctx: Context, config: Config = {}): void {
     duplicateOverlapGate: resolved.duplicateOverlapGate,
     recallFloorScore: resolved.recallFloorScore,
     shadowPassRate: resolved.shadowPassRate,
+    deletionFeedbackIntervalHours: resolved.deletionFeedbackIntervalHours,
+    deletionFeedbackMinDeletions: resolved.deletionFeedbackMinDeletions,
   }
 
   mkdirSync(join(resolved.databasePath, '..'), { recursive: true })

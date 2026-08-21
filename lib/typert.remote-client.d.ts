@@ -17,6 +17,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     extractionLogCount: (agentId: SessionId) => Promise<RemoteResult<number>>
     family: (agentId: SessionId, id: string) => Promise<RemoteResult<ExperienceSnapshot[]>>
     get: (agentId: SessionId, id: string, revision?: number) => Promise<RemoteResult<ExperienceSnapshot | undefined>>
+    getDeletionFeedback: (agentId: SessionId) => Promise<RemoteResult<ExperienceSnapshot | null>>
     getDiaryByIds: (agentId: SessionId, ids: string[]) => Promise<RemoteResult<DiaryEntry[]>>
     humanAckDiary: (agentId: SessionId, request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     humanAddExperience: (agentId: SessionId, request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
@@ -47,6 +48,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     report: (agentId: SessionId, request: ReportUseRequest) => Promise<RemoteResult<ReportUseResult>>
     revise: (agentId: SessionId, request: ReviseExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     rollback: (agentId: SessionId, request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
+    runDeletionFeedback: (agentId: SessionId) => Promise<RemoteResult<{ ran: boolean; summary?: string; }>>
     stats: (agentId: SessionId) => Promise<RemoteResult<MemoryStats>>
     verifyLedger: (agentId: SessionId) => Promise<RemoteResult<LedgerIntegrityResult>>
     verifyShadow: (agentId: SessionId, request: VerifyShadowRequest) => Promise<RemoteResult<VerifyShadowResult>>
@@ -62,6 +64,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'memory/extractionLogCount': (agentId: SessionId) => Promise<RemoteResult<number>>
     'memory/family': (agentId: SessionId, id: string) => Promise<RemoteResult<ExperienceSnapshot[]>>
     'memory/get': (agentId: SessionId, id: string, revision?: number) => Promise<RemoteResult<ExperienceSnapshot | undefined>>
+    'memory/getDeletionFeedback': (agentId: SessionId) => Promise<RemoteResult<ExperienceSnapshot | null>>
     'memory/getDiaryByIds': (agentId: SessionId, ids: string[]) => Promise<RemoteResult<DiaryEntry[]>>
     'memory/humanAckDiary': (agentId: SessionId, request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     'memory/humanAddExperience': (agentId: SessionId, request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
@@ -92,6 +95,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'memory/report': (agentId: SessionId, request: ReportUseRequest) => Promise<RemoteResult<ReportUseResult>>
     'memory/revise': (agentId: SessionId, request: ReviseExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'memory/rollback': (agentId: SessionId, request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
+    'memory/runDeletionFeedback': (agentId: SessionId) => Promise<RemoteResult<{ ran: boolean; summary?: string; }>>
     'memory/stats': (agentId: SessionId) => Promise<RemoteResult<MemoryStats>>
     'memory/verifyLedger': (agentId: SessionId) => Promise<RemoteResult<LedgerIntegrityResult>>
     'memory/verifyShadow': (agentId: SessionId, request: VerifyShadowRequest) => Promise<RemoteResult<VerifyShadowResult>>
@@ -110,6 +114,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'agent:memory/extractionLogCount': () => Promise<RemoteResult<number>>
     'agent:memory/family': (id: string) => Promise<RemoteResult<ExperienceSnapshot[]>>
     'agent:memory/get': (id: string, revision?: number) => Promise<RemoteResult<ExperienceSnapshot | undefined>>
+    'agent:memory/getDeletionFeedback': () => Promise<RemoteResult<ExperienceSnapshot | null>>
     'agent:memory/getDiaryByIds': (ids: string[]) => Promise<RemoteResult<DiaryEntry[]>>
     'agent:memory/humanAckDiary': (request: HumanAckDiaryRequest) => Promise<RemoteResult<DiaryEntry>>
     'agent:memory/humanAddExperience': (request: HumanAddExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
@@ -140,6 +145,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'agent:memory/report': (request: ReportUseRequest) => Promise<RemoteResult<ReportUseResult>>
     'agent:memory/revise': (request: ReviseExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
     'agent:memory/rollback': (request: RollbackExperienceRequest) => Promise<RemoteResult<ExperienceSnapshot>>
+    'agent:memory/runDeletionFeedback': () => Promise<RemoteResult<{ ran: boolean; summary?: string; }>>
     'agent:memory/stats': () => Promise<RemoteResult<MemoryStats>>
     'agent:memory/verifyLedger': () => Promise<RemoteResult<LedgerIntegrityResult>>
     'agent:memory/verifyShadow': (request: VerifyShadowRequest) => Promise<RemoteResult<VerifyShadowResult>>

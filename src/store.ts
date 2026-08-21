@@ -901,6 +901,48 @@ export class MemoryStore {
     return row.n
   }
 
+  // ── deletion-feedback summarization (P1-2) ────────────────────────────────
+
+  /** Last deletion-feedback summarization ts (0 = never). Stored in memory_meta. */
+  lastDeletionFeedbackTs(): number {
+    const row = this.db.prepare("SELECT value FROM memory_meta WHERE key = 'last_deletion_feedback_ts'").get() as { value: string } | undefined
+    return row ? Number(row.value) : 0
+  }
+
+  /** Record the timestamp of a deletion-feedback summarization run. */
+  setLastDeletionFeedbackTs(ts: number): void {
+    this.db.prepare("INSERT OR REPLACE INTO memory_meta (key, value) VALUES ('last_deletion_feedback_ts', ?)").run(String(ts))
+  }
+
+  /** Count experience deletions (ledger op='delete', objectType='experience') since a given ts. */
+  countDeletionsSince(ts: number): number {
+    const row = this.db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE op = 'delete' AND object_type = 'experience' AND ts > ?").get(ts) as { n: number }
+    return row.n
+  }
+
+  /** Get the deletion ledger blocks since a given ts (for LLM summarization input). */
+  getDeletionRecordsSince(ts: number, limit = 50): Array<{ seq: number; ts: number; objectId: string; reason: string; gist: string }> {
+    const rows = this.db.prepare(
+      "SELECT seq, ts, object_id, reason, payload FROM ledger WHERE op = 'delete' AND object_type = 'experience' AND ts > ? ORDER BY ts DESC LIMIT ?",
+    ).all(ts, limit) as Array<{ seq: number; ts: number; object_id: string; reason: string | null; payload: string }>
+    return rows.map(r => {
+      let gist = ''
+      try {
+        const p = JSON.parse(r.payload) as { gist?: string }
+        gist = p.gist ?? ''
+      } catch { /* ignore parse errors */ }
+      return { seq: r.seq, ts: r.ts, objectId: r.object_id, reason: r.reason ?? '', gist }
+    })
+  }
+
+  /** Find the active (non-deleted) experience by family name. Returns the latest revision. */
+  findExperienceByFamily(family: string): ExperienceSnapshot | undefined {
+    const row = this.db.prepare(
+      "SELECT * FROM experiences WHERE family = ? AND deleted = 0 ORDER BY revision DESC LIMIT 1",
+    ).get(family) as unknown as ExperienceRow | undefined
+    return row ? this.rowToExperience(row) : undefined
+  }
+
   /** Archive a set of experiences by family_id (leave recall; recoverable — never hard-deleted autonomously). */
   archiveExperienceIds(ids: string[], ts: number): void {
     const stmt = this.db.prepare(
