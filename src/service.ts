@@ -195,10 +195,18 @@ export class MemoryService extends TypertRemoteService {
     agent: Agent,
     records: Array<{ seq: number; ts: number; objectId: string; reason: string; gist: string }>,
   ): Promise<string> {
+    // Try session-specific model first, fall back to the default model config.
     const header = agent.session.requestHeader()?.config
-    if (header === undefined) return '' // no model route available
-    const provider = header.provider
-    const model = header.model
+    let provider = header?.provider
+    let model = header?.model
+    if (provider === undefined || model === undefined) {
+      const defaultModel = this.ctx.get('agentDefaultModel') as { get(): { provider: string; model: string } } | undefined
+      if (defaultModel !== undefined) {
+        const def = defaultModel.get()
+        provider = def.provider
+        model = def.model
+      }
+    }
     if (provider === undefined || model === undefined) return ''
 
     const deletionList = records.map((r, i) =>
@@ -588,10 +596,18 @@ ${deletionList}
     experience: ExperienceSnapshot,
     form: SkillForm,
   ): Promise<string> {
+    // Try session-specific model first, fall back to the default model config.
     const header = agent.session.requestHeader()?.config
-    if (header === undefined) return ''
-    const provider = header.provider
-    const model = header.model
+    let provider = header?.provider
+    let model = header?.model
+    if (provider === undefined || model === undefined) {
+      const defaultModel = this.ctx.get('agentDefaultModel') as { get(): { provider: string; model: string } } | undefined
+      if (defaultModel !== undefined) {
+        const def = defaultModel.get()
+        provider = def.provider
+        model = def.model
+      }
+    }
     if (provider === undefined || model === undefined) return ''
 
     const isScript = form === 'script_mjs'
