@@ -1,12 +1,19 @@
 /**
- * Memory monitoring nav store: shared viewing state between the session header
- * entry (conversation.session.header.utilities) and the right-pane takeover (shell.overlay).
- * One factory handle is created in apply and passed to both registrations so
- * selecting a menu in the sidebar and rendering the matching page read the
- * same state. Module level exports the factory only — a module-level handle
- * would pin the store's identity across plugin reloads.
+ * Memory monitoring nav state: shared viewing state between the session header
+ * entry (conversation.session.header.utilities, scope "session") and the
+ * right-pane takeover (shell.overlay, scope "root").
+ *
+ * IMPORTANT: DSH's slot system enforces "one handle, one scope" — a single
+ * store handle cannot be mounted under two different scopes. Since the header
+ * slot is scope "session" and the overlay slot is scope "root", we CANNOT
+ * share a DSH EngineStoreHandle between them.
+ *
+ * Instead, page selection lives in a module-level observable that both
+ * components subscribe to via the useCurrentPage() React hook. Neither slot
+ * registration passes a `store` option, so no scope pinning occurs.
  */
-import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'
+
+import { useEffect, useState } from 'react'
 
 /** The four fixed monitoring pages. */
 export const MEMORY_NAV_ITEMS = [
@@ -19,35 +26,42 @@ export const MEMORY_NAV_ITEMS = [
 /** One monitoring page key. */
 export type MemoryNavKey = typeof MEMORY_NAV_ITEMS[number]['key']
 
-/** Nav state: which page is active (null = the takeover overlay is hidden) and the group fold. */
-type MemoryNavState = {
-  page: MemoryNavKey | null
-  collapsed: boolean
+// ── Module-level observable ────────────────────────────────────────────────
+
+let _currentPage: MemoryNavKey | null = null
+const _listeners = new Set<() => void>()
+
+function notify(): void {
+  for (const fn of _listeners) fn()
 }
 
-/** Annotation twin of the actions literal (the export needs a declared return type). */
-type MemoryNavActions = {
-  select: (draft: MemoryNavState, page: MemoryNavKey) => void
-  clear: (draft: MemoryNavState) => void
-  toggleCollapsed: (draft: MemoryNavState) => void
+/** Select a monitoring page (opens the overlay on that page). */
+export function selectPage(page: MemoryNavKey): void {
+  _currentPage = page
+  notify()
+}
+
+/** Clear the selection (hides the overlay, returns to conversation view). */
+export function clearPage(): void {
+  _currentPage = null
+  notify()
+}
+
+/** Read the current page (null = overlay hidden). */
+export function getCurrentPage(): MemoryNavKey | null {
+  return _currentPage
 }
 
 /**
- * Create the memory nav store handle. `select` both chooses the page and
- * expands the group; `clear` hides the takeover overlay (used when the user
- * opens a session row, returning to the native conversation view).
- * @returns the store handle (spec + type + identity + factory in one).
+ * React hook: subscribe to page changes and re-render on update.
+ * Returns the current page key, or null when the overlay is hidden.
  */
-export function createMemoryNavStore(): EngineStoreHandle<MemoryNavState, MemoryNavActions> {
-  return defineStore({
-    init: (): MemoryNavState => ({ page: null, collapsed: false }),
-    actions: {
-      select: (d, page: MemoryNavKey) => {
-        d.page = page
-        d.collapsed = false
-      },
-      clear: (d) => { d.page = null },
-      toggleCollapsed: (d) => { d.collapsed = !d.collapsed },
-    },
-  })
+export function useCurrentPage(): MemoryNavKey | null {
+  const [, force] = useState(0)
+  useEffect(() => {
+    const fn = (): void => { force(n => n + 1) }
+    _listeners.add(fn)
+    return () => { _listeners.delete(fn) }
+  }, [])
+  return _currentPage
 }

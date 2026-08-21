@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.6] - 2026
+
+### Fixed
+- **"one handle, one scope" crash on DSH 0.1.1-rc.x.** The header slot (`conversation.session.header.utilities`, scope `session`) and the overlay slot (`shell.overlay`, scope `root`) shared a single DSH `EngineStoreHandle`, which DSH's slot system rejects — a store handle can only be mounted under one scope. Replaced the shared DSH store with a module-level observable (`navStore.ts`): page selection lives in a plain JS variable with a React `useCurrentPage()` hook; neither slot registration passes a `store` option, so no scope pinning occurs. No data or tool interface changes.
+
 ## [0.1.5] - 2026
 
 ### Changed

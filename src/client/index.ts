@@ -1,10 +1,14 @@
 /**
  * Memory workbench plugin, browser half: mounts the generated memory Remote
- * contribution, then registers two entries that share one nav store — a
- * conversation.session.header.utilities entry (right of the session title,
- * left of the Session log button) and a shell.overlay takeover (the monitoring
- * pages on the right). Selecting the header entry shows the matching page;
- * opening a session returns to the native conversation view.
+ * contribution, then registers two entries — a conversation.session.header.utilities
+ * entry (right of the session title, left of the Session log button) and a
+ * shell.overlay takeover (the monitoring pages on the right).
+ *
+ * CRITICAL: the header slot has scope "session" and the overlay slot has scope
+ * "root". DSH enforces "one handle, one scope" — a single EngineStoreHandle
+ * cannot be mounted under both. Page selection is therefore shared through a
+ * module-level observable (navStore.ts) instead of a DSH store handle. Neither
+ * registration passes a `store` option, so no scope pinning occurs.
  */
 
 import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/client'
@@ -17,7 +21,7 @@ import memoryRemote from 'dsh-daoing-memory/remote'
 import type { MemoryRemoteActions } from './actions.ts'
 import { MemoryHeaderAction } from './MemoryHeaderAction.tsx'
 import { MemoryWorkbench } from './Workbench.tsx'
-import { createMemoryNavStore } from './navStore.ts'
+import { selectPage } from './navStore.ts'
 
 /**
  * Required services: slot seat, session list, and the Remote carrier. The
@@ -35,22 +39,18 @@ function unwrap<T>(result: RemoteResult<T>): T {
 
 /**
  * Client plugin body: mount the memory Remote contribution, then register the
- * header entry and the overlay takeover sharing one nav store handle.
+ * header entry and the overlay takeover. Page selection is shared through the
+ * module-level observable in navStore.ts (not a DSH store handle) to avoid
+ * the "one handle, one scope" conflict between the session-scoped header slot
+ * and the root-scoped overlay slot.
  * @param ctx - client root context.
  * @returns disposer after both entries and the Remote namespace unregister.
  */
 export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
   const disposeMount = await ctx.remote.$mount(memoryRemote)
-  // $mount registers a standalone `remote.memory` service; read it through the
-  // strict global store (ctx.get) — the ctx property proxy would demand an
-  // inject declaration, and injecting a service this plugin itself provides
-  // deadlocks the fiber.
   const memory = ctx.get('remote.memory') as TypertClientRemote['memory'] | undefined
   if (memory === undefined) throw new Error('memory: remote namespace did not mount')
 
-  // Every generated method takes the session id first (wire transform of the
-  // host Agent parameter); the workbench binds it once the current session is
-  // known, so pages keep calling the session-free face.
   const actions: MemoryRemoteActions = {
     workbenchInfo: async (session: SessionId) => unwrap(await memory.workbenchInfo(session)),
     stats: async (session: SessionId) => unwrap(await memory.stats(session)),
@@ -87,23 +87,22 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     ingest: async (session: SessionId, request) => unwrap(await memory.ingest(session, request)),
   }
 
-  // One nav store shared by both registrations: the header entry writes the
-  // selection, the overlay reads it. Both slots belong to other packages
-  // (ui-conversation / ui-layout), so register through slots.inject — it waits
-  // for the declaration and removes the contribution when it collapses.
-  // order: -10 places the memory button before the Session log button (order 0).
-  const navStore = createMemoryNavStore()
+  // Header entry: no DSH store (avoids scope conflict with the root-scoped
+  // overlay). The button calls selectPage() from the module-level observable.
+  // order: -10 places it before the Session log button (order 0).
   const disposeNav = ctx.slots.inject('conversation.session.header.utilities', () => ctx.slots.register({
     name: 'conversation.session.header.utilities',
     id: 'memory-nav',
     order: -10,
-    store: navStore,
+    inject: () => ({ selectPage }),
   }, MemoryHeaderAction))
+
+  // Overlay entry: no DSH store either. The workbench reads page state from
+  // the module-level observable via useCurrentPage().
   const disposeOverlay = ctx.slots.inject('shell.overlay', () => ctx.slots.register({
     name: 'shell.overlay',
     id: 'memory-workbench',
     order: 100,
-    store: navStore,
     inject: () => actions,
   }, MemoryWorkbench))
 
