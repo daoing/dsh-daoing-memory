@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.16] - 2026-08-22
+
+### Changed
+- **Skill documentation aligned with the plugin's actual tool surface.** The bundled `memory-extraction` skill now documents the exact call signatures the tools require: `memory_extract(proposals[], concerns[], summary)` (its top-level structure was previously unstated), and `memory_refine`'s **required `complexity {tokens, steps, hadFailure}` gate input and `evidence` pointer** (previously omitted, so following the skill as written would get a refine rejected). The skill also now scopes itself explicitly as the `记·生` (record/generate) channel of the full 生·用·修·记 loop, listing the sibling `memory_recall` / `memory_report` / `memory_revise` / `memory_verify` / `memory_consolidate` / `memory_ledger` tools for the other phases. Npm and GitHub stay in sync.
+
 ## [0.1.15] - 2026-08-22
 
 ### Fixed
