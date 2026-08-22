@@ -11,7 +11,7 @@
  * once the workbench knows the current session.
  */
 import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client';
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, RollbackExperienceRequest } from '../types.ts';
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanConfirmFactRequest, HumanArchiveExperienceRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanReleaseColdRequest, HumanSetConcernStatusRequest, IngestRequest, IngestResult, LedgerBlock, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, MemoryWorkbenchInfo, GenerateSkillDraftRequest, PublishSkillRequest, ReviewSkillRequest, RollbackExperienceRequest, SkillArtifact } from '../types.ts';
 /** Callbacks the workbench pages call; each one lands in the audited ledger. */
 export interface MemoryWorkbenchActions {
     /** The workbench descriptor (workspace matching + config view). */
@@ -59,6 +59,8 @@ export interface MemoryWorkbenchActions {
     humanPin: (request: HumanPinRequest) => Promise<ExperienceSnapshot>;
     /** Human delete (tombstone + ledger fingerprint). */
     humanDeleteExperience: (request: HumanDeleteExperienceRequest) => Promise<void>;
+    /** Human archive (move to archived; preserves data, removes from recall). */
+    humanArchiveExperience: (request: HumanArchiveExperienceRequest) => Promise<void>;
     /** Human edit of the active revision. */
     humanEditExperience: (request: HumanEditExperienceRequest) => Promise<ExperienceSnapshot>;
     /** Human injection in the fixed experience format. */
@@ -85,6 +87,16 @@ export interface MemoryWorkbenchActions {
     humanReleaseCold: (request: HumanReleaseColdRequest) => Promise<ExperienceSnapshot>;
     /** 摄取归一: submit extracted candidates with provenance (006 §1). */
     ingest: (request: IngestRequest) => Promise<IngestResult>;
+    /** Generate a skill draft from an experience using LLM. */
+    generateSkillDraft: (request: GenerateSkillDraftRequest) => Promise<SkillArtifact>;
+    /** Review (approve/reject) a skill artifact. */
+    reviewSkill: (request: ReviewSkillRequest) => Promise<SkillArtifact>;
+    /** Publish an approved skill to $DSH_HOME/skills/. */
+    publishSkill: (request: PublishSkillRequest) => Promise<SkillArtifact>;
+    /** List skill artifacts. */
+    listSkillArtifacts: (parentExperienceId: string, status: string) => Promise<SkillArtifact[]>;
+    /** Check if an experience is a skill conversion candidate. */
+    isSkillCandidate: (experienceId: string) => Promise<boolean>;
 }
 /** The slot-injected face: every callback carries the session id first. */
 export interface MemoryRemoteActions {
@@ -133,6 +145,8 @@ export interface MemoryRemoteActions {
     humanPin: (session: SessionId, request: HumanPinRequest) => Promise<ExperienceSnapshot>;
     /** Human delete (tombstone + ledger fingerprint). */
     humanDeleteExperience: (session: SessionId, request: HumanDeleteExperienceRequest) => Promise<void>;
+    /** Human archive (move to archived; preserves data, removes from recall). */
+    humanArchiveExperience: (session: SessionId, request: HumanArchiveExperienceRequest) => Promise<void>;
     /** Human edit of the active revision. */
     humanEditExperience: (session: SessionId, request: HumanEditExperienceRequest) => Promise<ExperienceSnapshot>;
     /** Human injection in the fixed experience format. */
@@ -159,6 +173,16 @@ export interface MemoryRemoteActions {
     humanReleaseCold: (session: SessionId, request: HumanReleaseColdRequest) => Promise<ExperienceSnapshot>;
     /** 摄取归一: submit extracted candidates with provenance (006 §1). */
     ingest: (session: SessionId, request: IngestRequest) => Promise<IngestResult>;
+    /** Generate a skill draft from an experience using LLM. */
+    generateSkillDraft: (session: SessionId, request: GenerateSkillDraftRequest) => Promise<SkillArtifact>;
+    /** Review (approve/reject) a skill artifact. */
+    reviewSkill: (session: SessionId, request: ReviewSkillRequest) => Promise<SkillArtifact>;
+    /** Publish an approved skill to $DSH_HOME/skills/. */
+    publishSkill: (session: SessionId, request: PublishSkillRequest) => Promise<SkillArtifact>;
+    /** List skill artifacts. */
+    listSkillArtifacts: (session: SessionId, parentExperienceId: string, status: string) => Promise<SkillArtifact[]>;
+    /** Check if an experience is a skill conversion candidate. */
+    isSkillCandidate: (session: SessionId, experienceId: string) => Promise<boolean>;
 }
 /** Curry the session id away so the pages keep calling the bound face. */
 export declare function bindMemoryActions(remote: MemoryRemoteActions, session: SessionId): MemoryWorkbenchActions;

@@ -9,6 +9,7 @@
  * - memory_verify:  修 — shadow-replay verification of a draft (V1).
  * - memory_fact:    记 — append a diary entry (event layer).
  * - memory_extract: 记 — propose extracted profile facts (upward channel).
+ * - memory_human_inject: 特殊通道 — direct human experience injection (source=human, ledger-audited).
  * - memory_ledger:  账本 — query the audit ledger.
  *
  * @module dsh-daoing-memory/tools

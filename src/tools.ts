@@ -9,6 +9,7 @@
  * - memory_verify:  修 — shadow-replay verification of a draft (V1).
  * - memory_fact:    记 — append a diary entry (event layer).
  * - memory_extract: 记 — propose extracted profile facts (upward channel).
+ * - memory_human_inject: 特殊通道 — direct human experience injection (source=human, ledger-audited).
  * - memory_ledger:  账本 — query the audit ledger.
  *
  * @module dsh-daoing-memory/tools
@@ -1285,6 +1286,79 @@ export function apply(ctx: Context): void {
     },
     presentCall: () => present('查询账本', 'read'),
   }))
+
+
+  // 特殊通道: direct human experience injection. Bypasses the UI 人工管理 form while
+  // still landing in the append-only ledger (actor=human), so the hash chain stays
+  // verifiable. The plugin's own shape is unchanged — this is just an extra entry point.
+  ctx.tools.register(defineTool({
+    name: 'memory_human_inject',
+    description: '特殊通道：把一条通用经验直接注入经验库（source=human、status=live、信任地板，立即可被召回）。'
+      + '在 UI 人工管理页不便操作时使用；写入会 append 到审计账本（actor=human），账本可校验，不破坏 hash 链。'
+      + '一次调用注入一条，须写成可迁移的通用教训（reasoning 讲 why 与边界，勿写「本会话/本次」流水账）。',
+    parameters: {
+      kind: { type: 'string', required: true, enum: ['positive', 'negative'], description: 'positive=可用路径; negative=确认的路径.' },
+      family: { type: 'string', required: true, description: '任务族标签.' },
+      gist: { type: 'string', required: true, description: '一条可复用的通用教训.' },
+      situation: { type: 'array', required: true, items: { type: 'string' }, description: '触发召回的情境类别(可迁移), 非「本任务」.' },
+      path: {
+        type: 'array',
+        required: true,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            order: { type: 'integer', required: true },
+            action: { type: 'string', required: true },
+          },
+        },
+      },
+      reasoning: { type: 'string', required: true, description: '可迁移的 why (在<situation>下成立因<cause>); 非会话叙述.' },
+      limits: { type: 'array', required: true, items: { type: 'string' }, description: '此经验不适用的边界.' },
+      failureReason: { type: 'string', description: 'negative 注入的失败原因.' },
+      context: { type: 'string', description: '上下文/域作用域.' },
+      reason: { type: 'string', required: true, description: '注入原因(审计).' },
+    } as const,
+    output: {
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          id: { type: 'string', required: true },
+          revision: { type: 'integer', required: true },
+          status: { type: 'string', required: true },
+          trust: { type: 'number', required: true },
+          samples: { type: 'integer', required: true },
+        },
+      } as const,
+      render: (_args: unknown, value: { id: string; revision: number; status: string; trust: number; samples: number }) => [{
+        type: 'text' as const,
+        text: '已注入经验(特殊通道) [' + value.id + '] v' + String(value.revision) + ' ' + value.status + ' · 置信' + value.trust.toFixed(2) + '(样本' + String(value.samples) + ') —— source=human，已追加到审计账本，账本可校验。',
+      }],
+    },
+    execute: async (args, exec) => {
+      const snapshot = await memory.humanAddExperience(callingAgent(exec), {
+        kind: args.kind,
+        family: args.family,
+        gist: args.gist,
+        situation: args.situation,
+        path: args.path,
+        reasoning: args.reasoning,
+        limits: args.limits,
+        ...(args.failureReason === undefined ? {} : { failureReason: args.failureReason }),
+        ...(args.context === undefined ? {} : { context: args.context }),
+        reason: args.reason,
+      })
+      return {
+        id: snapshot.id,
+        revision: snapshot.revision,
+        status: snapshot.status,
+        trust: snapshot.trust,
+        samples: snapshot.samples,
+      }
+    },
+    presentCall: args => present('人工经验注入(特殊通道)', 'other', args.gist),
+  })),
 
   ctx.tools.register(defineTool({
     name: 'memory_consolidate',

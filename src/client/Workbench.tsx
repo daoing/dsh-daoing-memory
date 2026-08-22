@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { SessionId } from '@deepseek-ai/dsh-client-runtime/client'
 import type { MemoryWorkbenchInfo, MemoryStats } from '../types.ts'
 import type { MemoryRemoteActions, MemoryWorkbenchActions } from './actions.ts'
 import { bindMemoryActions } from './actions.ts'
@@ -50,10 +51,16 @@ export async function promptReason(action: string): Promise<string | undefined> 
  * selected in the module-level nav state and a current session exists (the
  * Remote face is session-bound).
  */
+/** Stable placeholder for a missing current session: the host memory remote
+ * ignores the session argument (`void agent`), so any id works. Using a fixed
+ * value lets the workbench render without a current session. */
+const NO_SESSION = '' as SessionId
 export function MemoryWorkbench(props: MemoryWorkbenchProps): React.ReactElement | null {
   const page = useCurrentPage()
   const sessionList = props.useSessions(s => s)
-  const sessionId = sessionList.current
+  // The memory library is global; the workbench must work without a current
+  // session (e.g. opening 人工管理 from the always-present sidebar entry).
+  const sessionId = sessionList.current ?? NO_SESSION
 
   const [info, setInfo] = useState<MemoryWorkbenchInfo | null>(null)
   const [stats, setStats] = useState<MemoryStats | null>(null)
@@ -64,7 +71,6 @@ export function MemoryWorkbench(props: MemoryWorkbenchProps): React.ReactElement
   const fetchStats = props.stats
 
   useEffect(() => {
-    if (sessionId === undefined) return
     let cancelled = false
     void fetchInfo(sessionId).then((value) => {
       if (!cancelled) setInfo(value)
@@ -73,7 +79,6 @@ export function MemoryWorkbench(props: MemoryWorkbenchProps): React.ReactElement
   }, [fetchInfo, sessionId])
 
   const refreshStats = useCallback((): void => {
-    if (sessionId === undefined) return
     void fetchStats(sessionId).then(setStats).catch(() => { /* stats unavailable */ })
   }, [fetchStats, sessionId])
 
@@ -84,7 +89,7 @@ export function MemoryWorkbench(props: MemoryWorkbenchProps): React.ReactElement
     return () => { clearInterval(timer) }
   }, [info, refreshStats, page])
 
-  const active = page !== null && info !== null && sessionId !== undefined
+  const active = page !== null && info !== null
 
   // Clicking outside the takeover (a session row, New Session, settings —
   // anything but the memory nav and the panel itself) returns to the native
@@ -128,7 +133,7 @@ export function MemoryWorkbench(props: MemoryWorkbenchProps): React.ReactElement
 
   // The pages call the session-free face; bind once per current session.
   const bound: MemoryWorkbenchActions | null = useMemo(
-    () => (sessionId === undefined ? null : bindMemoryActions(props, sessionId)),
+    () => bindMemoryActions(props, sessionId),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable injected face, see comment above
     [sessionId],
   )

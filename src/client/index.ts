@@ -16,10 +16,12 @@ import type { ClientContext, SessionId } from '@deepseek-ai/dsh-client-runtime/c
 // the ui-conversation SlotMap merge (the conversation.session.header.utilities entry).
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type { RemoteResult, TypertClientRemote } from '@deepseek-ai/dsh-typert-protocol'
 import memoryRemote from 'dsh-daoing-memory/remote'
 import type { MemoryRemoteActions } from './actions.ts'
 import { MemoryHeaderAction } from './MemoryHeaderAction.tsx'
+import { MemorySidebarEntry } from './MemorySidebarEntry.tsx'
 import { MemoryWorkbench } from './Workbench.tsx'
 import { selectPage } from './navStore.ts'
 
@@ -112,7 +114,19 @@ export async function apply(ctx: ClientContext): Promise<() => Promise<void>> {
     inject: () => actions,
   }, MemoryWorkbench))
 
+  // Always-present sidebar entry (root scope): the memory button is available
+  // without entering a session. The host memory remote ignores its session
+  // argument, so 人工管理 works from here too. List slot needs an id; optional
+  // order sorts list cells (0 = default).
+  const disposeSection = ctx.slots.inject('sidebar.sections', () => ctx.slots.register({
+    name: 'sidebar.sections',
+    id: 'memory-entry',
+    order: 0,
+    inject: () => ({ selectPage }),
+  }, MemorySidebarEntry))
+
   return async () => {
+    disposeSection()
     disposeNav()
     disposeOverlay()
     await disposeMount()

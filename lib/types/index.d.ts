@@ -14,6 +14,7 @@ export { MemoryCore, DEFAULT_CORE_CONFIG } from './core.ts';
 export type { MemoryCoreConfig } from './core.ts';
 export { MemoryService } from './service.ts';
 export { MemoryStore, MEMORY_SCHEMA_VERSION } from './store.ts';
+export declare const inject: string[];
 declare module '@deepseek-ai/cordis' {
     interface Context {
         /** The memory library service (self-evolving memory). */

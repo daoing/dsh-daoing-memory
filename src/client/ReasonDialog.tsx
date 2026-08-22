@@ -11,7 +11,7 @@
  * seat; a fixed-position element is the standard pattern).
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import css from './ReasonDialog.module.css'
 
 interface DialogRequest {
