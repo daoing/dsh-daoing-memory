@@ -117,3 +117,26 @@ LLM agent 在会话结束的瞬间就忘光一切。常见的补救——把对�
 - **不做跨 agent 的共享语义。** 库是单进程全局存储；多租户隔离不在 v1 范围。
 
 这些都是**以信任与可审计为先**、而非以检索规模为先的自觉取舍。扩展方向见 [STATUS.zh-CN.md](./STATUS.zh-CN.md)。
+
+---
+
+## 13. 特殊通道：人工注入经验（memory_human_inject）
+
+常规经验来源是 agent 在会话中通过 refine/ingest 生成。除此之外，还有一个**人工注入通道**，供作者把经核实的高价值经验直接写入，落地即 `live` 且记入账本。
+
+### 触发方式
+在 DSH 会话里发一句提示词，让 AI **调用 `memory_human_inject` 工具**即可——**无需**找 HTTP/RPC 端点、**无需**读 client.js / remote-client。
+
+### 参数
+`kind` / `family` / `gist` / `situation[]` / `path[{order,action}]` / `reasoning` / `limits[]` / `failureReason?` / `context?` / `reason`。
+
+### 落库语义
+- `source=human`、`status=live`、信任地板（`alpha=5, beta=2`）；
+- 每次写入 append 审计账本，`verifyLedger` 可校验。
+
+### 局限：无 globalFlag
+`memory_human_inject` 工具**没有 globalFlag 参数**（`humanAddExperience` 硬编码为 false）。因此：
+- 注入的**跨域（global）**经验默认只对当前作用域生效，必须注入后用 `humanEditExperience({ globalFlag: true })` 补设；
+- 补设后须再跑 `verifyLedger` 复核账本完整。
+
+> 实测基准：0.1.19 已通过该通道成功写入三条经验，并满足 `verifyLedger {ok:true}`。
