@@ -20,7 +20,7 @@
  *
  * @module dsh-daoing-memory/core
  */
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, EvolveExperienceRequest, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult, SkillArtifact, SkillForm, SkillStatus, ReviewSkillRequest, PublishSkillRequest } from './types.ts';
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExperienceStatus, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, EvolveExperienceRequest, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult, SkillArtifact, SkillForm, SkillStatus, ReviewSkillRequest, PublishSkillRequest } from './types.ts';
 import { MemoryStore } from './store.ts';
 /** Tunable mechanism parameters, all overridable from the plugin config. */
 export interface MemoryCoreConfig {
@@ -82,13 +82,17 @@ export declare class MemoryCore {
     constructor(store: MemoryStore, config: MemoryCoreConfig);
     private ledger;
     /** 生: refine one completed trajectory into a candidate (dual gate). */
-    refine(request: RefineExperienceRequest, actor: MemoryActor): RefineExperienceResult;
+    refine(request: RefineExperienceRequest, actor: MemoryActor, opts?: {
+        dedup?: boolean;
+    }): RefineExperienceResult;
     /**
      * 摄取归一: source-agnostic intake. Every extracted draft becomes an earned
      * candidate carrying provenance (sourceType + sourceRef), the source-authority
      * prior, and the declared context scope. Candidates never recall until verified.
      */
-    ingest(request: IngestRequest, actor: MemoryActor): IngestResult;
+    ingest(request: IngestRequest, actor: MemoryActor, opts?: {
+        dedup?: boolean;
+    }): IngestResult;
     /** 用: recall → scope → adjudicate → budget → inject, plus the candidate probe channel. */
     recall(request: RecallExperiencesRequest, actor: MemoryActor): RecallExperiencesResult;
     /** 用·验: one use outcome → Beta update, attribution, quarantine, gates. */
@@ -234,6 +238,20 @@ export declare class MemoryCore {
     humanPromote(id: string, reason: string, actor: MemoryActor): ExperienceSnapshot;
     /** Human re-release (006 §3.2): move a cold-palace revision back to candidate. */
     humanReleaseCold(request: HumanReleaseColdRequest, actor: MemoryActor): ExperienceSnapshot;
+    /** Record a corroboration ledger event for a rejected near-duplicate.
+     *  The LLM semantic-dedup path routes a DUPLICATE verdict here so the
+     *  ledger stays consistent with the mechanical-gate path (refine/ingest). */
+    markCorroborate(nearId: string, actor: MemoryActor, req: {
+        family: string;
+        gist: string;
+    }, via: string, score: number): void;
+    /** Near-duplicate candidate set for the LLM semantic-dedup prefilter. The
+     *  service layer asks here for the mechanical word-overlap top-K before it
+     *  runs the LLM verdict; the coarse hit is only a candidate pool, not a gate. */
+    nearDuplicateCandidates(gist: string, situation: string[], statuses: ExperienceStatus[], topK: number): {
+        snapshot: ExperienceSnapshot;
+        score: number;
+    }[];
     /** Human-approved self-growth: merge new evidence into a live, human-approved
      *  experience as an incremental new revision (revision+1, parent superseded).
      *  Only approvedBy='human' + status='live' may evolve; agent/system-approved

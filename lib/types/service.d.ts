@@ -36,14 +36,19 @@ export declare class MemoryService extends TypertRemoteService {
             model: string;
         };
     } | undefined);
-    /** 生: refine a completed trajectory into an experience candidate. */
-    refine(agent: Agent, request: RefineExperienceRequest): RefineExperienceResult;
+    /** 生: refine a completed trajectory into an experience candidate.
+     *  Semantic-dedup: coarse word-overlap candidate set first; when it is
+     *  non-empty the LLM judges [merge/duplicate/different] on the FULL lesson
+     *  (gist+situation+path+reasoning+limits), replacing the mechanical gate. */
+    refine(agent: Agent, request: RefineExperienceRequest): Promise<RefineExperienceResult>;
     /** 用: recall + adjudication + injection budget + negative channel. */
     recall(agent: Agent, request: RecallExperiencesRequest): RecallExperiencesResult;
     /** 用·验: report one use outcome with attribution (V0 verification). */
     report(agent: Agent, request: ReportUseRequest): ReportUseResult;
-    /** 摄取归一: source-agnostic intake; drafts become earned candidates (006 §1). */
-    ingest(agent: Agent, request: IngestRequest): IngestResult;
+    /** 摄取归一: source-agnostic intake; drafts become earned candidates (006 §1).
+     *  Semantic-dedup per item: coarse word-overlap candidate set; when non-empty
+     *  the LLM judges [merge/duplicate/different] on the FULL lesson. */
+    ingest(agent: Agent, request: IngestRequest): Promise<IngestResult>;
     /** 修: propose a revised draft for a challenged experience. */
     revise(agent: Agent, request: ReviseExperienceRequest): ExperienceSnapshot;
     /** V1 controlled re-enactment: shadow replay verification for a draft. */
@@ -65,6 +70,14 @@ export declare class MemoryService extends TypertRemoteService {
      * Uses the agent's current model route for the LLM call.
      */
     private maybeRunDeletionFeedbackSummarization;
+    /**
+     * LLM semantic-dedup verdict between a new lesson and a coarse candidate set.
+     * Reads the FULL lesson (gist+situation+path+reasoning+limits) on both sides
+     * and returns 'merge' | 'duplicate' | 'different'. Falls back to 'different'
+     * (accept) when the LLM is unavailable or the model route is missing, so the
+     * mechanical gate in core still governs without an LLM.
+     */
+    private dedupVerdictWithLlm;
     /**
      * Call the LLM to summarize deletion records into extraction feedback rules.
      * Uses ctx.llm.stream() with the agent's current model route.

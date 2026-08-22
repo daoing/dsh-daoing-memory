@@ -509,6 +509,37 @@ export class MemoryStore {
   }
 
   /**
+   * Near-duplicate candidate set for the information-gain gate (007 flow-log fix).
+   * Scores on gist+situation only (the lesson's identity) so identical lessons
+   * with divergent limits/paths still match. Returns the top-K matches (rough
+   * prefilter for the LLM semantic-dedup verdict), or [] when nothing matches.
+   */
+  findNearDuplicates(
+    queryTokens: Set<string>,
+    statuses: ExperienceStatus[],
+    topK: number,
+  ): { snapshot: ExperienceSnapshot; score: number }[] {
+    if (queryTokens.size === 0 || topK <= 0) return []
+    const sql = `
+      SELECT * FROM experiences
+      WHERE deleted = 0 AND status IN (${statuses.map(() => '?').join(', ')})
+    `
+    const rows = this.db.prepare(sql).all(...statuses) as unknown as ExperienceRow[]
+    const scored: { snapshot: ExperienceSnapshot; score: number }[] = []
+    for (const row of rows) {
+      const snapshot = this.rowToExperience(row)
+      const hay = new Set(tokenize([snapshot.gist, ...snapshot.situation].join(' ')))
+      if (hay.size === 0) continue
+      let hits = 0
+      for (const token of queryTokens) if (hay.has(token)) hits += 1
+      const score = hits / Math.sqrt(queryTokens.size * hay.size)
+      if (score > 0) scored.push({ snapshot, score })
+    }
+    scored.sort((a, b) => b.score - a.score)
+    return scored.slice(0, topK)
+  }
+
+  /**
    * Near-duplicate detection for the information-gain gate (007 flow-log fix).
    * Unlike recallCandidates it scores on gist+situation only (the lesson's
    * identity), so identical lessons with divergent limits/paths still match.

@@ -33,6 +33,7 @@ import type {
   DiaryEntry,
   ExperienceListFilter,
   ExperienceSnapshot,
+  ExperienceStatus,
   ExtractionRecord,
   ExtractFactsRequest,
   ExtractFactsResult,
@@ -214,7 +215,7 @@ export class MemoryCore {
   // ── 生: refine ────────────────────────────────────────────────────────────
 
   /** 生: refine one completed trajectory into a candidate (dual gate). */
-  refine(request: RefineExperienceRequest, actor: MemoryActor): RefineExperienceResult {
+  refine(request: RefineExperienceRequest, actor: MemoryActor, opts?: { dedup?: boolean }): RefineExperienceResult {
     const evidenceOk = (request.evidence.traceRef ?? '').trim() !== ''
       || (request.evidence.sessionRef ?? '').trim() !== ''
       || (request.evidence.note ?? '').trim() !== ''
@@ -235,15 +236,21 @@ export class MemoryCore {
     // Information-gain gate (007 flow-log fix): match on the lesson identity
     // (gist + situation) across the whole library; a near-duplicate corroborates
     // instead of inflating the library into a running log.
-    const dedupTokens = new Set(tokenize([request.gist, ...request.situation].join(' ')))
-    const near = this.store.findNearDuplicate(dedupTokens, ['candidate', 'live', 'challenged', 'archived', 'cold'])
-    if (near !== undefined && near.score >= this.config.duplicateOverlapGate) {
-      this.ledger('corroborate', 'experience', near.snapshot.id, actor, {
-        family: request.family,
-        gist: request.gist,
-        score: near.score,
-      })
-      return { accepted: false, reason: 'rejected-information-gain: near-duplicate of an existing experience; corroborated it instead', corroboratedId: near.snapshot.id }
+    // Information-gain gate: mechanical word-overlap is the DEFAULT (no-LLM)
+    // prefilter. When the service layer already ran LLM semantic dedup and
+    // decided DIFFERENT, it passes { dedup: false } to accept without a
+    // mechanical gate that would otherwise over-reject.
+    if (opts?.dedup !== false) {
+      const dedupTokens = new Set(tokenize([request.gist, ...request.situation].join(' ')))
+      const near = this.store.findNearDuplicate(dedupTokens, ['candidate', 'live', 'challenged', 'archived', 'cold'])
+      if (near !== undefined && near.score >= this.config.duplicateOverlapGate) {
+        this.ledger('corroborate', 'experience', near.snapshot.id, actor, {
+          family: request.family,
+          gist: request.gist,
+          score: near.score,
+        })
+        return { accepted: false, reason: 'rejected-information-gain: near-duplicate of an existing experience; corroborated it instead', corroboratedId: near.snapshot.id }
+      }
     }
     const now = Date.now()
     const snapshot: ExperienceSnapshot = {
@@ -291,7 +298,7 @@ export class MemoryCore {
    * candidate carrying provenance (sourceType + sourceRef), the source-authority
    * prior, and the declared context scope. Candidates never recall until verified.
    */
-  ingest(request: IngestRequest, actor: MemoryActor): IngestResult {
+  ingest(request: IngestRequest, actor: MemoryActor, opts?: { dedup?: boolean }): IngestResult {
     if ((request.sourceRef ?? '').trim() === '') {
       throw new Error('memory: ingest requires a non-empty sourceRef provenance')
     }
@@ -311,17 +318,19 @@ export class MemoryCore {
       // already accepted in this same batch. A near-duplicate corroborates
       // instead of inflating the library into a running log.
       const dedupTokens = new Set(tokenize([item.gist, ...item.situation].join(' ')))
-      const cross = this.store.findNearDuplicate(dedupTokens, ['candidate', 'live', 'challenged', 'archived', 'cold'])
-      if (cross !== undefined && cross.score >= this.config.duplicateOverlapGate) {
-        this.ledger('corroborate', 'experience', cross.snapshot.id, actor, {
-          family: item.family, gist: item.gist, score: cross.score, via: 'ingest',
-        })
-        rejected.push({ gist: item.gist, reason: 'rejected-information-gain: near-duplicate of an existing experience; corroborated it instead' })
-        continue
-      }
-      if (acceptedDedup.some(prev => tokenOverlap(dedupTokens, prev) >= this.config.duplicateOverlapGate)) {
-        rejected.push({ gist: item.gist, reason: 'rejected-information-gain: near-duplicate of another item in this same ingest batch' })
-        continue
+      if (opts?.dedup !== false) {
+        const cross = this.store.findNearDuplicate(dedupTokens, ['candidate', 'live', 'challenged', 'archived', 'cold'])
+        if (cross !== undefined && cross.score >= this.config.duplicateOverlapGate) {
+          this.ledger('corroborate', 'experience', cross.snapshot.id, actor, {
+            family: item.family, gist: item.gist, score: cross.score, via: 'ingest',
+          })
+          rejected.push({ gist: item.gist, reason: 'rejected-information-gain: near-duplicate of an existing experience; corroborated it instead' })
+          continue
+        }
+        if (acceptedDedup.some(prev => tokenOverlap(dedupTokens, prev) >= this.config.duplicateOverlapGate)) {
+          rejected.push({ gist: item.gist, reason: 'rejected-information-gain: near-duplicate of another item in this same ingest batch' })
+          continue
+        }
       }
       const now = Date.now()
       const snapshot: ExperienceSnapshot = {
@@ -1456,6 +1465,32 @@ export class MemoryCore {
     this.store.upsertExperience(next)
     this.ledger('release-cold', 'experience', next.id, actor, { revision: next.revision }, request.reason)
     return next
+  }
+
+  /** Record a corroboration ledger event for a rejected near-duplicate.
+   *  The LLM semantic-dedup path routes a DUPLICATE verdict here so the
+   *  ledger stays consistent with the mechanical-gate path (refine/ingest). */
+  markCorroborate(
+    nearId: string,
+    actor: MemoryActor,
+    req: { family: string; gist: string },
+    via: string,
+    score: number,
+  ): void {
+    this.ledger('corroborate', 'experience', nearId, actor, { family: req.family, gist: req.gist, score, via })
+  }
+
+  /** Near-duplicate candidate set for the LLM semantic-dedup prefilter. The
+   *  service layer asks here for the mechanical word-overlap top-K before it
+   *  runs the LLM verdict; the coarse hit is only a candidate pool, not a gate. */
+  nearDuplicateCandidates(
+    gist: string,
+    situation: string[],
+    statuses: ExperienceStatus[],
+    topK: number,
+  ): { snapshot: ExperienceSnapshot; score: number }[] {
+    const tokens = new Set(tokenize([gist, ...situation].join(' ')))
+    return this.store.findNearDuplicates(tokens, statuses, topK)
   }
 
   /** Human-approved self-growth: merge new evidence into a live, human-approved

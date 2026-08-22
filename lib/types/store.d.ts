@@ -85,6 +85,16 @@ export declare class MemoryStore {
         score: number;
     }[];
     /**
+     * Near-duplicate candidate set for the information-gain gate (007 flow-log fix).
+     * Scores on gist+situation only (the lesson's identity) so identical lessons
+     * with divergent limits/paths still match. Returns the top-K matches (rough
+     * prefilter for the LLM semantic-dedup verdict), or [] when nothing matches.
+     */
+    findNearDuplicates(queryTokens: Set<string>, statuses: ExperienceStatus[], topK: number): {
+        snapshot: ExperienceSnapshot;
+        score: number;
+    }[];
+    /**
      * Near-duplicate detection for the information-gain gate (007 flow-log fix).
      * Unlike recallCandidates it scores on gist+situation only (the lesson's
      * identity), so identical lessons with divergent limits/paths still match.
