@@ -2,6 +2,23 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.19] - 2026-08-23
+
+### Changed
+- **Semantic dedup is now fully LLM-judged on `memory_refine` / `memory_ingest`.** The store first runs a cheap *near-duplicate* scan to surface candidate families; the service then calls `dedupVerdictWithLlm` to produce a final `merge` / `duplicate` / `different` verdict. A `merge`/`duplicate` verdict can `evolve` or `markCorroborate` the target; `dedup:false` can override the mechanical gate (the gate is still present as a pre-filter). Schema stays at **v7**.
+- **Meta-experience rules extended.** Two more extraction-guidance rules were added (candidate ⑥ used as the worked example); the `extraction-feedback` experience is now a **global singleton** that guides future extractions.
+
+## [0.1.18] - 2026-08-22
+
+### Changed
+- **Human-approved experiences can now evolve (self-growth).** New `evolve` flow (`EvolveExperienceRequest` → core `evolve`, surfaced as a Remote method) lets a human-approved experience self-grow. An **`approvedBy`** marker is recorded at the five write points. Schema bumped to **v7** (additive; release aligned GitHub first, before npm).
+
+## [0.1.17] - 2026-08-22
+
+### Added
+- **Special channel `memory_human_inject`.** A human/oracle experience-injection route (source=human, status=live, trust floor, appended to the audit ledger) for seeding trusted experiences directly.
+- **Client UI sidecar** for the browser workbench. GitHub aligned to the published npm 0.1.17.
+
 ## [0.1.16] - 2026-08-22
 
 ### Changed
