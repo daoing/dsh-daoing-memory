@@ -38,6 +38,7 @@ import type {
   ExtractFactsResult,
   FactEntry,
   FactProposal,
+  EvolveExperienceRequest,
   HumanAddExperienceRequest,
   HumanAddFactRequest,
   HumanAckDiaryRequest,
@@ -547,7 +548,7 @@ export class MemoryCore {
     if (request.outcome === 'success' && attribution === 'experience') {
       if (next.status === 'candidate' && next.parentRevision !== undefined) {
         // Revised draft passed its one successful use: adopt it.
-        const adopted: ExperienceSnapshot = { ...next, status: 'live' }
+        const adopted: ExperienceSnapshot = { ...next, status: 'live', approvedBy: 'agent' as const }
         delete adopted.challengeReason
         next = adopted
         this.store.upsertExperience(next)
@@ -557,12 +558,12 @@ export class MemoryCore {
         base.adopted = true
         base.promoted = true
       } else if (next.status === 'candidate') {
-        next = { ...next, status: 'live' }
+        next = { ...next, status: 'live', approvedBy: 'agent' as const }
         this.ledger('promote', 'experience', next.id, actor, { revision: next.revision, via: 'use' })
         base.promoted = true
       } else if (next.status === 'archived') {
         // Found via deep recall and used successfully once: back to live.
-        next = { ...next, status: 'live' }
+        next = { ...next, status: 'live', approvedBy: 'agent' as const }
         this.ledger('restore', 'experience', next.id, actor, { revision: next.revision })
         base.promoted = true
       }
@@ -1415,6 +1416,7 @@ export class MemoryCore {
       verifiedCount: 0,
       rejectCount: 0,
       globalFlag: false,
+      approvedBy: 'human' as const,
       createdAt: now,
       updatedAt: now,
     }
@@ -1435,7 +1437,7 @@ export class MemoryCore {
     if (current.status !== 'candidate') {
       throw new Error(`memory: only candidates accept human promotion (status=${current.status})`)
     }
-    const next: ExperienceSnapshot = { ...current, status: 'live', lastVerifiedAt: Date.now(), updatedAt: Date.now() }
+    const next: ExperienceSnapshot = { ...current, status: 'live', approvedBy: 'human' as const, lastVerifiedAt: Date.now(), updatedAt: Date.now() }
     this.store.upsertExperience(next)
     if (next.parentRevision !== undefined) this.supersedeParent(next, actor)
     this.ledger('human-promote', 'experience', next.id, actor, { revision: next.revision }, reason)
@@ -1453,6 +1455,40 @@ export class MemoryCore {
     delete next.challengeReason
     this.store.upsertExperience(next)
     this.ledger('release-cold', 'experience', next.id, actor, { revision: next.revision }, request.reason)
+    return next
+  }
+
+  /** Human-approved self-growth: merge new evidence into a live, human-approved
+   *  experience as an incremental new revision (revision+1, parent superseded).
+   *  Only approvedBy='human' + status='live' may evolve; agent/system-approved
+   *  and non-live (challenged/cold/archived) are rejected. */
+  evolve(request: EvolveExperienceRequest, actor: MemoryActor): ExperienceSnapshot {
+    const current = this.store.getActiveRevision(request.id)
+    if (current === undefined) throw new Error(`memory: experience not found: ${request.id}`)
+    if (current.approvedBy !== 'human') {
+      throw new Error(`memory: only human-approved experiences evolve (approvedBy=${String(current.approvedBy)})`)
+    }
+    if (current.status !== 'live') {
+      throw new Error(`memory: only live experiences evolve (status=${current.status})`)
+    }
+    const situation = request.situation === undefined ? current.situation : [...new Set([...current.situation, ...request.situation])]
+    const limits = request.limits === undefined ? current.limits : [...new Set([...current.limits, ...request.limits])]
+    const now = Date.now()
+    const next: ExperienceSnapshot = {
+      ...current,
+      revision: current.revision + 1,
+      status: 'live',
+      parentRevision: current.revision,
+      gist: request.gist ?? current.gist,
+      situation,
+      path: request.path ?? current.path,
+      reasoning: request.reasoning ?? current.reasoning,
+      limits,
+      updatedAt: now,
+    }
+    this.store.upsertExperience(next)
+    this.supersedeParent(next, actor)
+    this.ledger('evolve', 'experience', next.id, actor, { revision: next.revision, by: current.revision }, request.reason)
     return next
   }
 

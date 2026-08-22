@@ -28,6 +28,7 @@ import type {
   ExtractFactsResult,
   FactEntry,
   GenerateSkillDraftRequest,
+  EvolveExperienceRequest,
   HumanAddExperienceRequest,
   HumanAddFactRequest,
   HumanAckDiaryRequest,
@@ -452,6 +453,15 @@ ${deletionList}
   humanPromote(agent: Agent, id: string, reason: string): ExperienceSnapshot {
     void agent
     return this.core.humanPromote(id, reason, 'human')
+  }
+
+  /// Human-approved self-growth: merge new evidence into a live, human-approved
+  /// experience. Semantic merge decision is made upstream (LLM); this is the
+  /// audited write that produces an incremental new revision.
+  @Remote('evolve')
+  evolve(agent: Agent, request: EvolveExperienceRequest): ExperienceSnapshot {
+    void agent
+    return this.core.evolve(request, 'human')
   }
 
   /** Human re-release of a cold-palace revision back to candidate (006 §3.2). */

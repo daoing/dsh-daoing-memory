@@ -20,7 +20,7 @@
  *
  * @module dsh-daoing-memory/core
  */
-import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult, SkillArtifact, SkillForm, SkillStatus, ReviewSkillRequest, PublishSkillRequest } from './types.ts';
+import type { ConcernTree, ConsolidateRequest, ConsolidateResult, DiaryAppendRequest, DiaryAppendResult, DiaryEntry, ExperienceListFilter, ExperienceSnapshot, ExtractionRecord, ExtractFactsRequest, ExtractFactsResult, FactEntry, EvolveExperienceRequest, HumanAddExperienceRequest, HumanAddFactRequest, HumanAckDiaryRequest, HumanArchiveExperienceRequest, HumanConfirmFactRequest, HumanDeleteConcernRequest, HumanDeleteExperienceRequest, HumanDeleteFactRequest, HumanEditExperienceRequest, HumanEditFactRequest, HumanPinRequest, HumanSetConcernStatusRequest, HumanReleaseColdRequest, IngestRequest, IngestResult, LedgerIntegrityResult, LedgerQueryRequest, MemoryExport, MemoryStats, RecallExperiencesRequest, RecallExperiencesResult, RefineExperienceRequest, RefineExperienceResult, ReportUseRequest, ReportUseResult, ReviseExperienceRequest, RollbackExperienceRequest, VerifyShadowRequest, VerifyShadowResult, SkillArtifact, SkillForm, SkillStatus, ReviewSkillRequest, PublishSkillRequest } from './types.ts';
 import { MemoryStore } from './store.ts';
 /** Tunable mechanism parameters, all overridable from the plugin config. */
 export interface MemoryCoreConfig {
@@ -234,6 +234,11 @@ export declare class MemoryCore {
     humanPromote(id: string, reason: string, actor: MemoryActor): ExperienceSnapshot;
     /** Human re-release (006 §3.2): move a cold-palace revision back to candidate. */
     humanReleaseCold(request: HumanReleaseColdRequest, actor: MemoryActor): ExperienceSnapshot;
+    /** Human-approved self-growth: merge new evidence into a live, human-approved
+     *  experience as an incremental new revision (revision+1, parent superseded).
+     *  Only approvedBy='human' + status='live' may evolve; agent/system-approved
+     *  and non-live (challenged/cold/archived) are rejected. */
+    evolve(request: EvolveExperienceRequest, actor: MemoryActor): ExperienceSnapshot;
     /** Human acknowledgement of a pending diary entry: reviewed, no fact extracted. */
     humanAckDiary(request: HumanAckDiaryRequest, actor: MemoryActor): DiaryEntry;
     /** Human lifecycle change of a top-level concern (007 §2.4, audited). */

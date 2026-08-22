@@ -93,6 +93,8 @@ export interface ExperienceSnapshot {
     rejectCount: number;
     /** Cross-context transferable (global) flag; default local-only (006 §2.4). */
     globalFlag: boolean;
+    /** Who approved this live revision: 'human' only may self-grow (evolve). */
+    approvedBy?: 'human' | 'agent';
     /** Epoch ms. */
     createdAt: number;
     /** Epoch ms. */
@@ -646,6 +648,24 @@ export interface HumanAddExperienceRequest {
     context?: string;
     /** Required reason (audited). */
     reason: string;
+}
+/** Human-approved experience self-growth: merge new evidence into a live,
+ *  human-approved experience as an incremental new revision. */
+export interface EvolveExperienceRequest {
+    /** Experience family id (must be approvedBy='human' and live). */
+    id: string;
+    /** What new evidence is merged and why. */
+    reason: string;
+    /** Replacement/merged gist (kept when omitted). */
+    gist?: string;
+    /** Extra situations to absorb (combined when omitted). */
+    situation?: string[];
+    /** Replacement path (kept when omitted). */
+    path?: ExperienceStep[];
+    /** Replacement reasoning (kept when omitted). */
+    reasoning?: string;
+    /** Extra limits to absorb (combined when omitted). */
+    limits?: string[];
 }
 /** Human fact operations. */
 export interface HumanAddFactRequest {

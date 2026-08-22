@@ -26,7 +26,7 @@ import type {
 } from './types.ts'
 
 /** Monotone store schema version. v1→v2 is an additive ALTER migration (see open()). */
-export const MEMORY_SCHEMA_VERSION = 6
+export const MEMORY_SCHEMA_VERSION = 7
 
 /** Half-life (ms) of the recency weighting applied to verification samples. */
 export const TRUST_HALF_LIFE_MS = 180 * 24 * 60 * 60 * 1000
@@ -130,6 +130,7 @@ interface ExperienceRow {
   verified_count: number
   reject_count: number
   global_flag: number
+  approved_by: string
   created_at: number
   updated_at: number
 }
@@ -211,6 +212,7 @@ export class MemoryStore {
         verified_count INTEGER NOT NULL DEFAULT 0,
         reject_count INTEGER NOT NULL DEFAULT 0,
         global_flag INTEGER NOT NULL DEFAULT 0,
+        approved_by TEXT NOT NULL DEFAULT '',
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         PRIMARY KEY (family_id, revision)
@@ -362,6 +364,12 @@ export class MemoryStore {
         `)
         v = 6
       }
+      if (v === 6 && MEMORY_SCHEMA_VERSION >= 7) {
+        // v6 → v7 (experience self-growth): mark who approved a live experience to
+        // human so only human-approved experiences may evolve.
+        db.exec("ALTER TABLE experiences ADD COLUMN approved_by TEXT NOT NULL DEFAULT '';")
+        v = 7
+      }
       if (v !== MEMORY_SCHEMA_VERSION) {
         throw new Error(`memory store schema version ${row.value} does not match ${MEMORY_SCHEMA_VERSION}; refusing to open`)
       }
@@ -382,8 +390,8 @@ export class MemoryStore {
         family_id, revision, kind, source, family, gist, situation, path, reasoning, limits,
         status, alpha, beta, last_verified_at, pinned, tokens_saved, tokens_spent,
         parent_revision, failure_reason, evidence, challenge_reason, deleted,
-        context, verified_count, reject_count, global_flag, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?,?)
+        context, verified_count, reject_count, global_flag, approved_by, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?)
       ON CONFLICT (family_id, revision) DO UPDATE SET
         kind = excluded.kind,
         source = excluded.source,
@@ -408,6 +416,7 @@ export class MemoryStore {
         verified_count = excluded.verified_count,
         reject_count = excluded.reject_count,
         global_flag = excluded.global_flag,
+        approved_by = excluded.approved_by,
         updated_at = excluded.updated_at
     `).run(
       s.id, s.revision, s.kind, s.source, s.family, s.gist,
@@ -416,7 +425,7 @@ export class MemoryStore {
       s.tokensSaved, s.tokensSpent, s.parentRevision ?? null, s.failureReason ?? null,
       s.evidence === undefined ? null : JSON.stringify(s.evidence), s.challengeReason ?? null,
       s.context ?? '', s.verifiedCount ?? 0, s.rejectCount ?? 0, s.globalFlag === true ? 1 : 0,
-      s.createdAt, s.updatedAt,
+      s.approvedBy ?? '', s.createdAt, s.updatedAt,
     )
   }
 
@@ -1040,6 +1049,7 @@ export class MemoryStore {
     if (row.failure_reason !== null) snapshot.failureReason = row.failure_reason
     if (row.evidence !== null) snapshot.evidence = JSON.parse(row.evidence) as EvidenceRef
     if (row.challenge_reason !== null) snapshot.challengeReason = row.challenge_reason
+    if (row.approved_by === 'human' || row.approved_by === 'agent') snapshot.approvedBy = row.approved_by
     return snapshot
   }
 

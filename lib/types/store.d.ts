@@ -8,7 +8,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type { ConcernEntry, ConcernStatus, ConcernTree, DiaryEntry, EvidenceRef, ExperienceSnapshot, ExperienceStatus, ExtractionRecord, FactEntry, LedgerBlock, SkillArtifact, SkillStatus } from './types.ts';
 /** Monotone store schema version. v1→v2 is an additive ALTER migration (see open()). */
-export declare const MEMORY_SCHEMA_VERSION = 6;
+export declare const MEMORY_SCHEMA_VERSION = 7;
 /** Half-life (ms) of the recency weighting applied to verification samples. */
 export declare const TRUST_HALF_LIFE_MS: number;
 /** One concerns-table row (007 §2). */
