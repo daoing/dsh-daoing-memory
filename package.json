@@ -1,7 +1,7 @@
 {
   "name": "dsh-daoing-memory",
   "description": "Self-evolving memory for DeepSeek Harness (DSH): earned experiences, diary/fact semantic memory, concern tracking, and an append-only audit ledger.",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "type": "module",
   "license": "MIT",
   "author": "daoing",

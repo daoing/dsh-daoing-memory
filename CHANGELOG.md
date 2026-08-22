@@ -2,6 +2,14 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.14] - 2026-08-22
+
+### Fixed
+- **Deadlock**: plugin apply() previously awaited `ctx.get('loader')?.await()` while itself being loaded by that same loader, so the loader's inertia never cleared, apply() never resolved, and the `memory` service was never activated — every memory RPC returned "active Service \"memory\" is unavailable". apply() now reads `ctx.get('llm')` directly (llm is a core service composed before this plugin), keeping a stable reference because `ctx.llm` fails inside a Remote call context.
+- Host is shipped as a self-contained bundle so the published front end resolves `./core.js` etc. at runtime (a prior npm artifact omitted top-level lib modules and aborted plugin load).
+
+### Notes
+- Re-published from the github main tree (2a76aeb) so npm and GitHub are in sync.
 ## [0.1.9] - 2026
 
 ### Added
