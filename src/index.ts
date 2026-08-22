@@ -22,6 +22,14 @@ export { MemoryCore, DEFAULT_CORE_CONFIG } from './core.ts'
 export type { MemoryCoreConfig } from './core.ts'
 export { MemoryService } from './service.ts'
 export { MemoryStore, MEMORY_SCHEMA_VERSION } from './store.ts'
+// LLM service dependencies this host plugin needs BEFORE its apply() runs.
+// Accessing ctx.get('llm') / ctx.get('agentDefaultModel') inside apply() only
+// returns a handle if cordis has already registered those services, so we
+// declare them here. Without this, this plugin could apply before llm / the
+// default agent model are provisioned and get an undefined handle (which made
+// skill generation return an empty LLM draft).
+export const inject = ['llm', 'agentDefaultModel']
+
 
 declare module '@deepseek-ai/cordis' {
   interface Context {

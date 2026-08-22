@@ -2,6 +2,11 @@
 
 All notable changes to `dsh-daoing-memory` are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.1.15] - 2026-08-22
+
+### Fixed
+- **LLM / default-model services were not provisioned when the host plugin booted.** The plugin never declared its cordis service dependencies, so cordis could invoke `apply()` before `llm` and `agentDefaultModel` were registered — `ctx.get('llm')` and `ctx.get('agentDefaultModel')` returned `undefined`, the skill generator had no model route, and draft generation failed with `memory: LLM generated empty skill content`. The host entry now exports `inject = ['llm', 'agentDefaultModel']`, guaranteeing those services are composed before this plugin boots (the same pattern the in-box `@deepseek-ai/dsh-memory` half relies on).
+
 ## [0.1.14] - 2026-08-22
 
 ### Fixed
